@@ -1,5 +1,5 @@
-import {attributes, buildToDelete, buildToInsert, buildToUpdate, exist, metadata, select, StringMap, version} from './build';
-import {Attribute, Attributes, Statement} from './metadata';
+import {attributes, buildToDelete, buildToInsert, buildToUpdate, exist, metadata, select, version} from './build';
+import {Attribute, Attributes, Statement, StringMap} from './metadata';
 
 export class SqlLoader<T, ID> {
   keys: Attribute[];

@@ -1,8 +1,5 @@
-import {Attribute, Attributes, Statement} from './metadata';
+import {Attribute, Attributes, Statement, StringMap} from './metadata';
 
-export interface StringMap {
-  [key: string]: string;
-}
 export function select<T>(obj: T, table: string, ks: Attribute[], buildParam: (i: number) => string, i?: number): Statement {
   if (!i) {
     i = 1;

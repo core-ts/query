@@ -1,5 +1,4 @@
-import {StringMap} from './build';
-import {Attribute} from './metadata';
+import {Attribute, StringMap} from './metadata';
 import {createSqlWriter, SqlLoader, SqlWriter} from './services';
 export {SqlLoader as SqlLoadRepository};
 export {SqlWriter as SqlGenericRepository};
@@ -12,7 +11,20 @@ export * from './metadata';
 export * from './build';
 export * from './services';
 export * from './batch';
+export * from './query';
+export * from './search';
+export * from './SearchBuilder';
 
+export class Loader<T> {
+  map?: StringMap;
+  constructor(public query: (sql: string, args?: any[], m?: StringMap, bools?: Attribute[]) => Promise<T[]>, public sql: string, m?: StringMap, public bools?: Attribute[]) {
+    this.map = m;
+    this.load = this.load.bind(this);
+  }
+  load(): Promise<T[]> {
+    return this.query(this.sql, [], this.map, this.bools);
+  }
+}
 export function toArray<T>(arr: T[]): T[] {
   if (!arr || arr.length === 0) {
     return [];
@@ -28,7 +40,7 @@ export function toArray<T>(arr: T[]): T[] {
   }
   return p;
 }
-export function handleResults<T>(r: T[], m?: StringMap, bools?: Attribute[]) {
+export function handleResults<T>(r: T[], m?: StringMap, bools?: Attribute[]): T[] {
   if (m) {
     const res = mapArray(r, m);
     if (bools && bools.length > 0) {
@@ -44,7 +56,7 @@ export function handleResults<T>(r: T[], m?: StringMap, bools?: Attribute[]) {
     }
   }
 }
-export function handleBool<T>(objs: T[], bools: Attribute[]) {
+export function handleBool<T>(objs: T[], bools: Attribute[]): T[] {
   if (!bools || bools.length === 0 || !objs) {
     return objs;
   }
