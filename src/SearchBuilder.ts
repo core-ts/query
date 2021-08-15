@@ -57,9 +57,8 @@ export class SearchBuilder<T, S> {
     const st = (this.sort ? this.sort : 'sort');
     const sn = s[st] as string;
     delete s[st];
-    const s1 = JSON.parse(JSON.stringify(s));
     const x = (this.provider === postgre ? 'ilike' : this.buildParam);
-    const q2 = buildQuery(s1, x, this.table, this.attributes, sn, fields, this.q, this.excluding, this.buildSort);
+    const q2 = buildQuery(s, x, this.table, this.attributes, sn, fields, this.q, this.excluding, this.buildSort);
     if (this.fromDB) {
       return buildFromQuery(this.query, q2.query, q2.params, limit, skip, this.map, this.bools, this.provider, this.total).then(r => {
         if (r.list && r.list.length > 0) {
