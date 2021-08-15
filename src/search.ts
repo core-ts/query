@@ -22,8 +22,13 @@ export function buildFromQuery<T>(query: (sql: string, args?: any[], m?: StringM
       const countQuery = buildCountQuery(sql);
       const resultPromise = query(sql2, params, mp, bools);
       const countPromise = query(countQuery, params).then(r => {
-        const keys = Object.keys(r);
-        return r[keys[0]] as number;
+        if (!r || r.length === 0) {
+          return 0;
+        } else {
+          const r0 = r[0];
+          const keys = Object.keys(r0);
+          return r0[keys[0]] as number;
+        }
       });
       return Promise.all([resultPromise, countPromise]).then(r => {
         const [list, total] = r;
