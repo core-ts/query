@@ -8,10 +8,10 @@ export function select<T>(obj: T, table: string, ks: Attribute[], buildParam: (i
     const field = (ks[0].field ? ks[0].field : ks[0].name);
     if (typeof obj === 'number') {
       const query = `select * from ${table} where ${field} = ${obj}`;
-      return { query, args: [] };
+      return { query, params: [] };
     } else {
       const query = `select * from ${table} where ${field} = ${buildParam(i)}`;
-      return { query, args: [obj] };
+      return { query, params: [obj] };
     }
   } else if (ks.length > 1) {
     const cols: string[] = [];
@@ -22,7 +22,7 @@ export function select<T>(obj: T, table: string, ks: Attribute[], buildParam: (i
       args.push(obj[k.name]);
     }
     const query = `select * from ${table} where ${cols.join(' and ')}`;
-    return { query, args };
+    return { query, params: args };
   } else {
     return null;
   }
@@ -38,10 +38,10 @@ export function exist<T>(obj: T, table: string, ks: Attribute[], buildParam: (i:
     const field = (ks[0].field ? ks[0].field : ks[0].name);
     if (typeof obj === 'number') {
       const query = `select ${col} from ${table} where ${field} = ${obj}`;
-      return { query, args: [] };
+      return { query, params: [] };
     } else {
       const query = `select ${col} from ${table} where ${field} = ${buildParam(i)}`;
-      return { query, args: [obj] };
+      return { query, params: [obj] };
     }
   } else if (ks.length > 1) {
     const cols: string[] = [];
@@ -52,7 +52,7 @@ export function exist<T>(obj: T, table: string, ks: Attribute[], buildParam: (i:
       args.push(obj[k.name]);
     }
     const query = `select * from ${table} where ${cols.join(' and ')}`;
-    return { query, args };
+    return { query, params: args };
   } else {
     return null;
   }
@@ -65,10 +65,10 @@ export function buildToDelete<T>(obj: T, table: string, ks: Attribute[], buildPa
     const field = (ks[0].field ? ks[0].field : ks[0].name);
     if (typeof obj === 'number') {
       const query = `delete from ${table} where ${field} = ${obj}`;
-      return { query, args: [] };
+      return { query, params: [] };
     } else {
       const query = `delete from ${table} where ${field} = ${buildParam(i)}`;
-      return { query, args: [obj] };
+      return { query, params: [obj] };
     }
   } else if (ks.length > 1) {
     const cols: string[] = [];
@@ -79,7 +79,7 @@ export function buildToDelete<T>(obj: T, table: string, ks: Attribute[], buildPa
       args.push(obj[k.name]);
     }
     const query = `delete from ${table} where ${cols.join(' and ')}`;
-    return { query, args };
+    return { query, params: args };
   } else {
     return null;
   }
@@ -89,7 +89,7 @@ export function insert<T>(exec: (sql: string, args?: any[]) => Promise<number>, 
   if (!stm) {
     return Promise.resolve(0);
   } else {
-    return exec(stm.query, stm.args);
+    return exec(stm.query, stm.params);
   }
 }
 export function buildToInsert<T>(obj: T, table: string, attrs: Attributes, buildParam: (i: number) => string, ver?: string, i?: number): Statement {
@@ -119,10 +119,16 @@ export function buildToInsert<T>(obj: T, table: string, attrs: Attributes, build
             values.push(`''`);
           } else if (typeof v === 'number') {
             values.push(toString(v));
-          } else {
-            const p = buildParam(i++);
-            values.push(p);
-            if (typeof v === 'boolean') {
+          } else if (typeof v === 'boolean') {
+            if (attr.true === undefined) {
+              if (v === true) {
+                values.push(`true`);
+              } else {
+                values.push(`false`);
+              }
+            } else {
+              const p = buildParam(i++);
+              values.push(p);
               if (v === true) {
                 const v2 = (attr.true ? attr.true : '1');
                 args.push(v2);
@@ -130,9 +136,11 @@ export function buildToInsert<T>(obj: T, table: string, attrs: Attributes, build
                 const v2 = (attr.false ? attr.false : '0');
                 args.push(v2);
               }
-            } else {
-              args.push(v);
             }
+          } else {
+            const p = buildParam(i++);
+            values.push(p);
+            args.push(v);
           }
         }
       }
@@ -148,7 +156,7 @@ export function buildToInsert<T>(obj: T, table: string, attrs: Attributes, build
     return null;
   } else {
     const query = `insert into ${table}(${cols.join(',')})values(${values.join(',')})`;
-    return { query, args };
+    return { query, params: args };
   }
 }
 export function insertBatch<T>(exec: (sql: string, args?: any[]) => Promise<number>, objs: T[], table: string, attrs: Attributes, buildParam: (i: number) => string, i?: number): Promise<number> {
@@ -156,7 +164,7 @@ export function insertBatch<T>(exec: (sql: string, args?: any[]) => Promise<numb
   if (!stm) {
     return Promise.resolve(0);
   } else {
-    return exec(stm.query, stm.args);
+    return exec(stm.query, stm.params);
   }
 }
 export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attributes, buildParam: (i: number) => string, i?: number): Statement {
@@ -183,43 +191,51 @@ export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attribute
         if (v === undefined || v === null) {
           v = attr.default;
         }
-        let x: string;
+        // let x: string;
         if (attr.version) {
-          x = '1';
+          values.push('1');
         } else if (v === undefined || v == null) {
-          x = 'null';
+          values.push('null');
         } else if (v === '') {
-          x = `''`;
+          values.push(`''`);
         } else if (typeof v === 'number') {
-          x = toString(v);
-        } else {
-          x = buildParam(i++);
-          if (typeof v === 'boolean') {
+          values.push(toString(v));
+        } else if (typeof v === 'boolean') {
+          if (attr.true === undefined) {
             if (v === true) {
-              const v2 = (attr.true ? '' + attr.true : '1');
-              args.push(v2);
+              values.push(`true`);
             } else {
-              const v2 = (attr.false ? '' + attr.false : '0');
-              args.push(v2);
+              values.push(`false`);
             }
           } else {
-            args.push(v);
+            const p = buildParam(i++);
+            values.push(p);
+            if (v === true) {
+              const v2 = (attr.true ? attr.true : '1');
+              args.push(v2);
+            } else {
+              const v2 = (attr.false ? attr.false : '0');
+              args.push(v2);
+            }
           }
+        } else {
+          const p = buildParam(i++);
+          values.push(p);
+          args.push(v);
         }
-        values.push(x);
       }
     }
     rows.push(`(${values.join(',')})`);
   }
   const query = `insert into ${table}(${cols.join(',')})values ${rows.join(',')}`;
-  return { query, args };
+  return { query, params: args };
 }
 export function update<T>(exec: (sql: string, args?: any[]) => Promise<number>, obj: T, table: string, attrs: Attributes, buildParam: (i: number) => string, ver?: string, i?: number): Promise<number> {
   const stm = buildToUpdate(obj, table, attrs, buildParam, ver, i);
   if (!stm) {
     return Promise.resolve(0);
   } else {
-    return exec(stm.query, stm.args);
+    return exec(stm.query, stm.params);
   }
 }
 export function buildToUpdate<T>(obj: T, table: string, attrs: Attributes, buildParam: (i: number) => string, ver?: string, i?: number): Statement {
@@ -248,19 +264,26 @@ export function buildToUpdate<T>(obj: T, table: string, attrs: Attributes, build
             x = `''`;
           } else if (typeof v === 'number') {
             x = toString(v);
-          } else {
-            x = buildParam(i++);
-            if (typeof v === 'boolean') {
+          } else if (typeof v === 'boolean') {
+            if (attr.true === undefined) {
               if (v === true) {
-                const v2 = (attr.true ? '' + attr.true : '1');
-                args.push(v2);
+                x = `true`;
               } else {
-                const v2 = (attr.false ? '' + attr.false : '0');
-                args.push(v2);
+                x = `false`;
               }
             } else {
-              args.push(v);
+              x = buildParam(i++);
+              if (v === true) {
+                const v2 = (attr.true ? attr.true : '1');
+                args.push(v2);
+              } else {
+                const v2 = (attr.false ? attr.false : '0');
+                args.push(v2);
+              }
             }
+          } else {
+            x = buildParam(i++);
+            args.push(v);
           }
           colSet.push(`${field}=${x}`);
         }
@@ -313,7 +336,7 @@ export function buildToUpdate<T>(obj: T, table: string, attrs: Attributes, build
     return null;
   } else {
     const query = `update ${table} set ${colSet.join(',')} where ${colQuery.join(' and ')}`;
-    return { query, args };
+    return { query, params: args };
   }
 }
 export function updateBatch<T>(exec: (statements: Statement[]) => Promise<number>, objs: T[], table: string, attrs: Attributes, buildParam: (i: number) => string, notSkipInvalid?: boolean): Promise<number> {
@@ -349,19 +372,26 @@ export function buildToUpdateBatch<T>(objs: T[], table: string, attrs: Attribute
             x = `''`;
           } else if (typeof v === 'number') {
             x = toString(v);
-          } else {
-            x = buildParam(i++);
-            if (typeof v === 'boolean') {
+          } else if (typeof v === 'boolean') {
+            if (attr.true === undefined) {
               if (v === true) {
-                const v2 = (attr.true ? '' + attr.true : '1');
-                args.push(v2);
+                x = `true`;
               } else {
-                const v2 = (attr.false ? '' + attr.false : '0');
-                args.push(v2);
+                x = `false`;
               }
             } else {
-              args.push(v);
+              x = buildParam(i++);
+              if (v === true) {
+                const v2 = (attr.true ? attr.true : '1');
+                args.push(v2);
+              } else {
+                const v2 = (attr.false ? attr.false : '0');
+                args.push(v2);
+              }
             }
+          } else {
+            x = buildParam(i++);
+            args.push(v);
           }
           colSet.push(`${field}=${x}`);
         }
@@ -417,7 +447,7 @@ export function buildToUpdateBatch<T>(objs: T[], table: string, attrs: Attribute
         }
       }
       const query = `update ${table} set ${colSet.join(',')} where ${colQuery.join(' and ')}`;
-      const stm = { query, args };
+      const stm: Statement = { query, params: args };
       sts.push(stm);
     }
   }

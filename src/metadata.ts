@@ -15,7 +15,7 @@ export interface StringMap {
 }
 export interface Statement {
   query: string;
-  args?: any[];
+  params?: any[];
 }
 
 export type DataType = 'ObjectId' | 'date' | 'datetime' | 'time'

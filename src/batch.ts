@@ -20,7 +20,7 @@ export class SqlInserter<T> {
     }
     const stmt = buildToInsert(obj2, this.table, this.attributes, this.param, this.version);
     if (stmt) {
-      return this.exec(stmt.query, stmt.args);
+      return this.exec(stmt.query, stmt.params);
     } else {
       return Promise.resolve(0);
     }
@@ -45,7 +45,7 @@ export class SqlUpdater<T> {
     }
     const stmt = buildToUpdate(obj2, this.table, this.attributes, this.param, this.version);
     if (stmt) {
-      return this.exec(stmt.query, stmt.args);
+      return this.exec(stmt.query, stmt.params);
     } else {
       return Promise.resolve(0);
     }
@@ -74,7 +74,7 @@ export class SqlBatchInserter<T> {
     }
     const stmt = buildToInsertBatch(list, this.table, this.attributes, this.param);
     if (stmt) {
-      return this.exec(stmt.query, stmt.args);
+      return this.exec(stmt.query, stmt.params);
     } else {
       return Promise.resolve(0);
     }
@@ -82,7 +82,7 @@ export class SqlBatchInserter<T> {
 }
 export class SqlBatchUpdater<T> {
   version?: string;
-  constructor(public execute: (statements: Statement[]) => Promise<number>, public table: string, public attributes: Attributes, public param: (i: number) => string, protected notSkipInvalid?: boolean, public map?: (v: T) => T) {
+  constructor(public execBatch: (statements: Statement[]) => Promise<number>, public table: string, public attributes: Attributes, public param: (i: number) => string, protected notSkipInvalid?: boolean, public map?: (v: T) => T) {
     this.write = this.write.bind(this);
     const x = version(attributes);
     if (x) {
@@ -103,7 +103,7 @@ export class SqlBatchUpdater<T> {
     }
     const stmts = buildToUpdateBatch(list, this.table, this.attributes, this.param, this.notSkipInvalid);
     if (stmts && stmts.length > 0) {
-      return this.execute(stmts);
+      return this.execBatch(stmts);
     } else {
       return Promise.resolve(0);
     }

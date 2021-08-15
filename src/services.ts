@@ -35,7 +35,7 @@ export class SqlLoader<T, ID> {
   load(id: ID): Promise<T> {
     const stmt = select<ID>(id, this.table, this.keys, this.param);
     if (this.fromDB) {
-      return this.query(stmt.query, stmt.args, this.map).then(res => {
+      return this.query(stmt.query, stmt.params, this.map).then(res => {
         if (!res || res.length === 0) {
           return null;
         } else {
@@ -44,18 +44,18 @@ export class SqlLoader<T, ID> {
         }
       });
     } else {
-      return this.query(stmt.query, stmt.args, this.map).then(res => (!res || res.length === 0) ? null : res[0]);
+      return this.query(stmt.query, stmt.params, this.map).then(res => (!res || res.length === 0) ? null : res[0]);
     }
   }
   exist(id: ID): Promise<boolean> {
     const field = (this.keys[0].field ? this.keys[0].field : this.keys[0].name);
     const stmt = exist<ID>(id, this.table, this.keys, this.param, field);
-    return this.query(stmt.query, stmt.args, this.map).then(res => (!res || res.length === 0) ? false : true);
+    return this.query(stmt.query, stmt.params, this.map).then(res => (!res || res.length === 0) ? false : true);
   }
 }
 export interface Manager {
   exec(sql: string, args?: any[]): Promise<number>;
-  execute(statements: Statement[]): Promise<number>;
+  execBatch(statements: Statement[]): Promise<number>;
   query<T>(sql: string, args?: any[], m?: StringMap, fields?: string[]): Promise<T[]>;
 }
 export function createSqlWriter<T, ID>(table: string,
@@ -77,7 +77,7 @@ export class SqlWriter<T, ID> extends SqlLoader<T, ID> {
     buildParam: (i: number) => string,
     protected toDB?: (v: T) => T,
     fromDB?: (v: T) => T,
-    public execute?: (statements: Statement[]) => Promise<number>) {
+    public execBatch?: (statements: Statement[]) => Promise<number>) {
     super(table, query, attrs, buildParam, fromDB);
     const x = version(attrs);
     if (x) {
@@ -95,7 +95,13 @@ export class SqlWriter<T, ID> extends SqlLoader<T, ID> {
     }
     const stmt = buildToInsert(obj2, this.table, this.attributes, this.param, this.version);
     if (stmt) {
-      return this.exec(stmt.query, stmt.args);
+      return this.exec(stmt.query, stmt.params).catch(err => {
+        if (err && err.error === 'duplicate') {
+          return 0;
+        } else {
+          throw err;
+        }
+      });
     } else {
       return Promise.resolve(0);
     }
@@ -107,7 +113,7 @@ export class SqlWriter<T, ID> extends SqlLoader<T, ID> {
     }
     const stmt = buildToUpdate(obj2, this.table, this.attributes, this.param, this.version);
     if (stmt) {
-      return this.exec(stmt.query, stmt.args);
+      return this.exec(stmt.query, stmt.params);
     } else {
       return Promise.resolve(0);
     }
@@ -118,7 +124,7 @@ export class SqlWriter<T, ID> extends SqlLoader<T, ID> {
   delete(id: ID): Promise<number> {
     const stmt = buildToDelete<ID>(id, this.table, this.keys, this.param);
     if (stmt) {
-      return this.exec(stmt.query, stmt.args);
+      return this.exec(stmt.query, stmt.params);
     } else {
       return Promise.resolve(0);
     }

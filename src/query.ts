@@ -222,10 +222,10 @@ export function buildQuery<S>(s: S, bparam: LikeType|((i: number ) => string), t
   const sOrderBy = (sSort.length > 0 ? ` order by ${sSort}` : '');
   if (filters.length === 0) {
     const sql = `select ${buildFieldsByAttributes(attrs, fields)} from ${table}${sOrderBy}`;
-    return { query: sql, args };
+    return { query: sql, params: args };
   } else {
     const sql = `select ${buildFieldsByAttributes(attrs, fields)} from ${table} where ${filters.join(' and ')}${sOrderBy}`;
-    return { query: sql, args };
+    return { query: sql, params: args };
   }
 }
 export function getId(attrs: Attributes): string {

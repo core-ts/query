@@ -61,7 +61,7 @@ export class SearchBuilder<T, S> {
     const x = (this.provider === postgre ? 'ilike' : this.buildParam);
     const q2 = buildQuery(s1, x, this.table, this.attributes, sn, fields, this.q, this.excluding, this.buildSort);
     if (this.fromDB) {
-      return buildFromQuery(this.query, q2.query, q2.args, limit, skip, this.map, this.bools, this.provider, this.total).then(r => {
+      return buildFromQuery(this.query, q2.query, q2.params, limit, skip, this.map, this.bools, this.provider, this.total).then(r => {
         if (r.list && r.list.length > 0) {
           r.list = r.list.map(o => this.fromDB(o));
         } else {
@@ -69,7 +69,7 @@ export class SearchBuilder<T, S> {
         }
       });
     } else {
-      return buildFromQuery(this.query, q2.query, q2.args, limit, skip, this.map, this.bools, this.provider, this.total);
+      return buildFromQuery(this.query, q2.query, q2.params, limit, skip, this.map, this.bools, this.provider, this.total);
     }
   }
 }

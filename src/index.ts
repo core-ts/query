@@ -15,6 +15,10 @@ export * from './query';
 export * from './search';
 export * from './SearchBuilder';
 
+// tslint:disable-next-line:class-name
+export class resource {
+  static string?: boolean;
+}
 export class Loader<T> {
   map?: StringMap;
   constructor(public query: (sql: string, args?: any[], m?: StringMap, bools?: Attribute[]) => Promise<T[]>, public sql: string, m?: StringMap, public bools?: Attribute[]) {
@@ -25,17 +29,30 @@ export class Loader<T> {
     return this.query(this.sql, [], this.map, this.bools);
   }
 }
-export function toArray<T>(arr: T[]): T[] {
+export function toArray(arr: any[]): any[] {
   if (!arr || arr.length === 0) {
     return [];
   }
-  const p: T[] = [];
+  const p: any[] = [];
   const l = arr.length;
   for (let i = 0; i < l; i++) {
-    if (arr[i] === undefined) {
+    if (arr[i] === undefined || arr[i] == null) {
       p.push(null);
     } else {
-      p.push(arr[i]);
+      if (typeof arr[i] === 'object') {
+        if (arr[i] instanceof Date) {
+          p.push(arr[i]);
+        } else {
+          if (resource.string) {
+            const s: string = JSON.stringify(arr[i]);
+            p.push(s);
+          } else {
+            p.push(arr[i]);
+          }
+        }
+      } else {
+        p.push(arr[i]);
+      }
     }
   }
   return p;
