@@ -495,8 +495,8 @@ export function buildMap(attrs: Attributes): StringMap {
     attr.name = k;
     const field = (attr.field ? attr.field : k);
     const s = field.toLowerCase();
-    if (s !== field) {
-      mp[s] = field;
+    if (s !== k) {
+      mp[s] = k;
     }
   }
   return mp;
