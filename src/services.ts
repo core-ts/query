@@ -55,7 +55,7 @@ export class SqlLoader<T, ID> {
 }
 export interface Manager {
   exec(sql: string, args?: any[]): Promise<number>;
-  execBatch(statements: Statement[]): Promise<number>;
+  execBatch(statements: Statement[], firstSuccess?: boolean): Promise<number>;
   query<T>(sql: string, args?: any[], m?: StringMap, fields?: string[]): Promise<T[]>;
 }
 export function createSqlWriter<T, ID>(table: string,
@@ -64,7 +64,7 @@ export function createSqlWriter<T, ID>(table: string,
     buildParam: (i: number) => string,
     toDB?: (v: T) => T,
     fromDB?: (v: T) => T) {
-  const writer = new SqlWriter<T, ID>(table, manager.query, manager.exec, attrs, buildParam, toDB, fromDB);
+  const writer = new SqlWriter<T, ID>(table, manager.query, manager.exec, attrs, buildParam, toDB, fromDB, manager.execBatch);
   return writer;
 }
 
@@ -77,7 +77,7 @@ export class SqlWriter<T, ID> extends SqlLoader<T, ID> {
     buildParam: (i: number) => string,
     protected toDB?: (v: T) => T,
     fromDB?: (v: T) => T,
-    public execBatch?: (statements: Statement[]) => Promise<number>) {
+    public execBatch?: (statements: Statement[], firstSuccess?: boolean) => Promise<number>) {
     super(table, query, attrs, buildParam, fromDB);
     const x = version(attrs);
     if (x) {

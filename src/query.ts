@@ -1,3 +1,4 @@
+import {params} from './build';
 import {Attribute, Attributes, Statement, StringMap} from './metadata';
 
 export type LikeType = 'like' | 'ilike';
@@ -43,7 +44,7 @@ export function getField(name: string, map?: Attributes|StringMap): string {
   return name;
 }
 export function buildMsSQLParam(i: number): string {
-  return '@p' + i;
+  return '@' + i;
 }
 export function buildOracleParam(i: number): string {
   return ':' + i;
@@ -131,7 +132,14 @@ export function buildQuery<S>(s: S, bparam: LikeType|((i: number ) => string), t
           args.push(v);
         } else if (typeof v === 'object') {
           if (attr.type === 'date' || attr.type === 'datetime') {
-            if (isDateRange(v)) {
+            if (Array.isArray(v)) {
+              const ps = params(param, v.length, i);
+              i = i + v.length;
+              for (const sv of v) {
+                args.push(sv);
+              }
+              filters.push(`${field} in (${ps.join(',')})`);
+            } else if (isDateRange(v)) {
               if (v['max']) {
                 filters.push(`${field} <= ${param(i++)}`);
                 args.push(v['max']);

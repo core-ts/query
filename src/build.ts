@@ -1,5 +1,15 @@
 import {Attribute, Attributes, Statement, StringMap} from './metadata';
 
+export function params(param: (i: number) => string, length: number, from?: number): string[] {
+  if (from === undefined || from == null) {
+    from = 0;
+  }
+  const ps: string[] = [];
+  for (let i = 1; i <= length; i++) {
+    ps.push(param(i + from));
+  }
+  return ps;
+}
 export function select<T>(obj: T, table: string, ks: Attribute[], buildParam: (i: number) => string, i?: number): Statement {
   if (!i) {
     i = 1;
