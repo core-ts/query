@@ -1,6 +1,6 @@
 import {Attribute, Attributes, Statement, StringMap} from './metadata';
 
-export function params(param: (i: number) => string, length: number, from?: number): string[] {
+export function params(length: number, param: (i: number) => string, from?: number): string[] {
   if (from === undefined || from == null) {
     from = 0;
   }
