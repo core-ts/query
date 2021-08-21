@@ -133,12 +133,14 @@ export function buildQuery<S>(s: S, bparam: LikeType|((i: number ) => string), t
         } else if (typeof v === 'object') {
           if (attr.type === 'date' || attr.type === 'datetime') {
             if (Array.isArray(v)) {
-              const ps = params(v.length, param, i);
-              i = i + v.length;
-              for (const sv of v) {
-                args.push(sv);
+              if (v.length > 0) {
+                const ps = params(v.length, param, i);
+                i = i + v.length;
+                for (const sv of v) {
+                  args.push(sv);
+                }
+                filters.push(`${field} in (${ps.join(',')})`);
               }
-              filters.push(`${field} in (${ps.join(',')})`);
             } else if (isDateRange(v)) {
               if (v['max']) {
                 filters.push(`${field} <= ${param(i++)}`);
