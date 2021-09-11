@@ -1,11 +1,17 @@
 import {Attribute, StringMap} from './metadata';
-import {createSqlWriter, SqlLoader, SqlWriter} from './services';
+import {createSqlSearchWriter, createSqlWriter, SqlLoader, SqlSearchLoader, SqlSearchWriter, SqlWriter} from './services';
 export {SqlLoader as SqlLoadRepository};
 export {SqlWriter as SqlGenericRepository};
 export {SqlLoader as SqlLoadService};
 export {SqlWriter as SqlGenericService};
+export {SqlSearchLoader as ViewSearchRepository};
+export {SqlSearchLoader as ViewSearchService};
+export {SqlSearchWriter as GenericSearchRepository};
+export {SqlSearchWriter as GenericSearchService};
 export {createSqlWriter as createGenericRepository};
 export {createSqlWriter as createGenericService};
+export {createSqlSearchWriter as createGenericSearchRepository};
+export {createSqlSearchWriter as createGenericSearchService};
 
 export * from './metadata';
 export * from './build';
