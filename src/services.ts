@@ -77,7 +77,7 @@ export class SqlSearchLoader<T, ID, S extends SearchModel> extends SqlLoader<T, 
 export interface Manager {
   exec(sql: string, args?: any[], ctx?: any): Promise<number>;
   execBatch(statements: Statement[], firstSuccess?: boolean, ctx?: any): Promise<number>;
-  query<T>(sql: string, args?: any[], m?: StringMap, fields?: string[], ctx?: any): Promise<T[]>;
+  query<T>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any): Promise<T[]>;
 }
 export function createSqlWriter<T, ID>(table: string,
     manager: Manager,
