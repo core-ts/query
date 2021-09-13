@@ -20,6 +20,7 @@ export * from './batch';
 export * from './query';
 export * from './search';
 export * from './SearchBuilder';
+export * from './client';
 
 // tslint:disable-next-line:class-name
 export class resource {
