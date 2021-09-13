@@ -1,4 +1,5 @@
-import {Statement} from './metadata';
+import {handleResults} from './map';
+import {Attribute, Statement, StringMap} from './metadata';
 
 export interface JStatement {
   query: string;
@@ -15,13 +16,13 @@ export interface HttpRequest {
   post<T>(url: string, obj: any, options?: {headers?: Headers}): Promise<T>;
 }
 export interface Proxy {
-  query<T>(sql: string, args?: any[]): Promise<T[]>;
+  query<T>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[]): Promise<T[]>;
   exec(sql: string, args?: any[]): Promise<number>;
   execBatch(stmts: Statement[]): Promise<number>;
-  beginTransaction?(): Promise<string>;
+  beginTransaction?(timeout?: number): Promise<string>;
   commitTransaction?(tx: string): Promise<boolean>;
   rollbackTransaction?(tx: string): Promise<boolean>;
-  queryWithTx?<T>(tx: string, sql: string, args?: any[]): Promise<T[]>;
+  queryWithTx?<T>(tx: string, commit: boolean, sql: string, args?: any[], m?: StringMap, bools?: Attribute[]): Promise<T[]>;
   execWithTx?(tx: string, commit: boolean, sql: string, args?: any[]): Promise<number>;
   execBatchWithTx?(tx: string, commit: boolean, stmts: Statement[]): Promise<number>;
 }
@@ -56,10 +57,15 @@ export class ProxyClient implements Proxy {
     this.exec = this.exec.bind(this);
     this.execBatch = this.execBatch.bind(this);
   }
-  query<T>(sql: string, args?: any[]): Promise<T[]> {
+  query<T>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[]): Promise<T[]> {
     const dates = toDates(args);
     const j: JStatement = {query: sql, params: args, dates};
-    return this.httpRequest.post<T[]>(this.url + '/query', j);
+    if (m || bools) {
+      return this.httpRequest.post<T[]>(this.url + '/query', j).then(r => handleResults(r, m, bools));
+    } else {
+      return this.httpRequest.post<T[]>(this.url + '/query', j);
+    }
+
   }
   exec(sql: string, args?: any[]): Promise<number> {
     const dates = toDates(args);
@@ -70,8 +76,9 @@ export class ProxyClient implements Proxy {
     const d = buildStatements(stmts);
     return this.httpRequest.post<number>(this.url + '/exec-batch', d);
   }
-  beginTransaction?(): Promise<string> {
-    return this.httpRequest.post<string>(this.url + '/begin', '');
+  beginTransaction?(timeout?: number): Promise<string> {
+    const st = (timeout && timeout > 0 ? '?timeout=' + timeout : '');
+    return this.httpRequest.post<string>(this.url + '/begin' + st, '');
   }
   commitTransaction?(tx: string): Promise<boolean> {
     return this.httpRequest.post<boolean>(this.url + '/end?tx=' + tx, '');
@@ -79,10 +86,15 @@ export class ProxyClient implements Proxy {
   rollbackTransaction?(tx: string): Promise<boolean> {
     return this.httpRequest.post<boolean>(this.url + '/end?roleback=true&tx=' + tx, '');
   }
-  queryWithTx?<T>(tx: string, sql: string, args?: any[]): Promise<T[]> {
+  queryWithTx?<T>(tx: string, commit: boolean, sql: string, args?: any[], m?: StringMap, bools?: Attribute[]): Promise<T[]> {
     const dates = toDates(args);
     const j: JStatement = {query: sql, params: args, dates};
-    return this.httpRequest.post<T[]>(this.url + '/query?tx=' + tx, j);
+    const sc = (commit ? '&commit=true' : '');
+    if (m || bools) {
+      return this.httpRequest.post<T[]>(this.url + '/query?tx=' + tx + sc, j).then(r => handleResults(r, m, bools));
+    } else {
+      return this.httpRequest.post<T[]>(this.url + '/query?tx=' + tx + sc, j);
+    }
   }
   execWithTx?(tx: string, commit: boolean, sql: string, args?: any[]): Promise<number> {
     const dates = toDates(args);
