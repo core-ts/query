@@ -169,76 +169,153 @@ export function buildToInsert<T>(obj: T, table: string, attrs: Attributes, build
     return { query, params: args };
   }
 }
-export function insertBatch<T>(exec: (sql: string, args?: any[]) => Promise<number>, objs: T[], table: string, attrs: Attributes, buildParam: (i: number) => string, i?: number): Promise<number> {
-  const stm = buildToInsertBatch(objs, table, attrs, buildParam, i);
+export function insertBatch<T>(exec: (sql: string, args?: any[]) => Promise<number>, objs: T[], table: string, attrs: Attributes, buildParam: (i: number) => string, notSkipInvalid?: boolean, i?: number): Promise<number> {
+  const stm = buildToInsertBatch(objs, table, attrs, buildParam, notSkipInvalid, '', i);
   if (!stm) {
     return Promise.resolve(0);
   } else {
     return exec(stm.query, stm.params);
   }
 }
-export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attributes, buildParam: (i: number) => string, i?: number): Statement {
+function buildOracleParam(i: number): string {
+  return ':' + i;
+}
+export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attributes, buildParam: (i: number) => string, notSkipInvalid?: boolean, ver?: string, i?: number): Statement {
   if (!i) {
     i = 1;
   }
   const ks = Object.keys(attrs);
-  const cols: string[] = [];
-  const rows: string[] = [];
   const args: any[] = [];
-  for (const k of ks) {
-    const attr = attrs[k];
-    if (attr && !attr.ignored && !attr.noinsert) {
-      const field = (attr.field ? attr.field : k);
-      cols.push(field);
-    }
-  }
-  for (const obj of objs) {
-    const values: string[] = [];
+  if (buildParam) {
+    const cols: string[] = [];
+    const rows: string[] = [];
     for (const k of ks) {
       const attr = attrs[k];
       if (attr && !attr.ignored && !attr.noinsert) {
-        let v = obj[k];
-        if (v === undefined || v === null) {
-          v = attr.default;
-        }
-        // let x: string;
-        if (attr.version) {
-          values.push('1');
-        } else if (v === undefined || v == null) {
-          values.push('null');
-        } else if (v === '') {
-          values.push(`''`);
-        } else if (typeof v === 'number') {
-          values.push(toString(v));
-        } else if (typeof v === 'boolean') {
-          if (attr.true === undefined) {
-            if (v === true) {
-              values.push(`true`);
+        const field = (attr.field ? attr.field : k);
+        cols.push(field);
+      }
+    }
+    for (const obj of objs) {
+      const values: string[] = [];
+      for (const k of ks) {
+        const attr = attrs[k];
+        if (attr && !attr.ignored && !attr.noinsert) {
+          let v = obj[k];
+          if (v === undefined || v === null) {
+            v = attr.default;
+          }
+          // let x: string;
+          if (attr.version) {
+            values.push('1');
+          } else if (v === undefined || v == null) {
+            values.push('null');
+          } else if (v === '') {
+            values.push(`''`);
+          } else if (typeof v === 'number') {
+            values.push(toString(v));
+          } else if (typeof v === 'boolean') {
+            if (attr.true === undefined) {
+              if (v === true) {
+                values.push(`true`);
+              } else {
+                values.push(`false`);
+              }
             } else {
-              values.push(`false`);
+              const p = buildParam(i++);
+              values.push(p);
+              if (v === true) {
+                const v2 = (attr.true ? attr.true : '1');
+                args.push(v2);
+              } else {
+                const v2 = (attr.false ? attr.false : '0');
+                args.push(v2);
+              }
             }
           } else {
             const p = buildParam(i++);
             values.push(p);
-            if (v === true) {
-              const v2 = (attr.true ? attr.true : '1');
-              args.push(v2);
-            } else {
-              const v2 = (attr.false ? attr.false : '0');
-              args.push(v2);
-            }
+            args.push(v);
           }
-        } else {
-          const p = buildParam(i++);
-          values.push(p);
-          args.push(v);
         }
       }
+      rows.push(`(${values.join(',')})`);
     }
-    rows.push(`(${values.join(',')})`);
+    const query = `insert into ${table}(${cols.join(',')})values ${rows.join(',')}`;
+    return { query, params: args };
+  } else {
+    buildParam = buildOracleParam;
+    const rows: string[] = [];
+    for (const obj of objs) {
+      const cols: string[] = [];
+      const values: string[] = [];
+      let isVersion = false;
+      for (const k of ks) {
+        let v = obj[k];
+        const attr = attrs[k];
+        if (attr && !attr.ignored && !attr.noinsert) {
+          if (v === undefined || v == null) {
+            v = attr.default;
+          }
+          if (v !== undefined && v != null) {
+            const field = (attr.field ? attr.field : k);
+            cols.push(field);
+            if (k === ver) {
+              isVersion = true;
+              values.push(`${1}`);
+            } else {
+              if (v === '') {
+                values.push(`''`);
+              } else if (typeof v === 'number') {
+                values.push(toString(v));
+              } else if (typeof v === 'boolean') {
+                if (attr.true === undefined) {
+                  if (v === true) {
+                    values.push(`true`);
+                  } else {
+                    values.push(`false`);
+                  }
+                } else {
+                  const p = buildParam(i++);
+                  values.push(p);
+                  if (v === true) {
+                    const v2 = (attr.true ? attr.true : '1');
+                    args.push(v2);
+                  } else {
+                    const v2 = (attr.false ? attr.false : '0');
+                    args.push(v2);
+                  }
+                }
+              } else {
+                const p = buildParam(i++);
+                values.push(p);
+                args.push(v);
+              }
+            }
+          }
+        }
+      }
+      if (!isVersion && ver && ver.length > 0) {
+        const attr = attrs[ver];
+        const field = (attr.field ? attr.field : ver);
+        cols.push(field);
+        values.push(`${1}`);
+      }
+      if (cols.length === 0) {
+        if (notSkipInvalid) {
+          return null;
+        }
+      } else {
+        const s = `into ${table}(${cols.join(',')})values(${values.join(',')})`;
+        rows.push(s);
+      }
+    }
+    if (rows.length === 0) {
+      return null;
+    }
+    const query = `insert all (${rows.join(' ')} select * from dual`;
+    return { query, params: args };
   }
-  const query = `insert into ${table}(${cols.join(',')})values ${rows.join(',')}`;
-  return { query, params: args };
 }
 export function update<T>(exec: (sql: string, args?: any[]) => Promise<number>, obj: T, table: string, attrs: Attributes, buildParam: (i: number) => string, ver?: string, i?: number): Promise<number> {
   const stm = buildToUpdate(obj, table, attrs, buildParam, ver, i);
