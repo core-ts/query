@@ -53,7 +53,7 @@ export class SqlUpdater<T> {
 }
 export class SqlBatchInserter<T> {
   version?: string;
-  constructor(public exec: (sql: string, args?: any[]) => Promise<number>, public table: string, public attributes: Attributes, public param: (i: number) => string, public map?: (v: T) => T) {
+  constructor(public exec: (sql: string, args?: any[]) => Promise<number>, public table: string, public attributes: Attributes, public param: ((i: number) => string)|boolean, public map?: (v: T) => T) {
     this.write = this.write.bind(this);
     const x = version(attributes);
     if (x) {
@@ -72,7 +72,7 @@ export class SqlBatchInserter<T> {
         list.push(obj2);
       }
     }
-    const stmt = buildToInsertBatch(list, this.table, this.attributes, this.param);
+    const stmt = buildToInsertBatch(list, this.table, this.attributes, this.param, this.version);
     if (stmt) {
       return this.exec(stmt.query, stmt.params);
     } else {

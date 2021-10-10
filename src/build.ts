@@ -169,8 +169,8 @@ export function buildToInsert<T>(obj: T, table: string, attrs: Attributes, build
     return { query, params: args };
   }
 }
-export function insertBatch<T>(exec: (sql: string, args?: any[]) => Promise<number>, objs: T[], table: string, attrs: Attributes, buildParam: (i: number) => string, notSkipInvalid?: boolean, i?: number): Promise<number> {
-  const stm = buildToInsertBatch(objs, table, attrs, buildParam, notSkipInvalid, '', i);
+export function insertBatch<T>(exec: (sql: string, args?: any[]) => Promise<number>, objs: T[], table: string, attrs: Attributes, buildParam: ((i: number) => string)|boolean, ver?: string, i?: number): Promise<number> {
+  const stm = buildToInsertBatch(objs, table, attrs, buildParam, ver, i);
   if (!stm) {
     return Promise.resolve(0);
   } else {
@@ -180,13 +180,13 @@ export function insertBatch<T>(exec: (sql: string, args?: any[]) => Promise<numb
 function buildOracleParam(i: number): string {
   return ':' + i;
 }
-export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attributes, buildParam: (i: number) => string, notSkipInvalid?: boolean, ver?: string, i?: number): Statement {
+export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attributes, buildParam: ((i: number) => string) | boolean, ver?: string, i?: number): Statement {
   if (!i) {
     i = 1;
   }
   const ks = Object.keys(attrs);
   const args: any[] = [];
-  if (buildParam) {
+  if (buildParam && typeof buildParam === 'function') {
     const cols: string[] = [];
     const rows: string[] = [];
     for (const k of ks) {
@@ -244,7 +244,10 @@ export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attribute
     const query = `insert into ${table}(${cols.join(',')})values ${rows.join(',')}`;
     return { query, params: args };
   } else {
-    buildParam = buildOracleParam;
+    let notSkipInvalid = false;
+    if (buildParam === true) {
+      notSkipInvalid = true;
+    }
     const rows: string[] = [];
     for (const obj of objs) {
       const cols: string[] = [];
@@ -276,7 +279,7 @@ export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attribute
                     values.push(`false`);
                   }
                 } else {
-                  const p = buildParam(i++);
+                  const p = buildOracleParam(i++);
                   values.push(p);
                   if (v === true) {
                     const v2 = (attr.true ? attr.true : '1');
@@ -287,7 +290,7 @@ export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attribute
                   }
                 }
               } else {
-                const p = buildParam(i++);
+                const p = buildOracleParam(i++);
                 values.push(p);
                 args.push(v);
               }
@@ -313,7 +316,7 @@ export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attribute
     if (rows.length === 0) {
       return null;
     }
-    const query = `insert all (${rows.join(' ')} select * from dual`;
+    const query = `insert all ${rows.join(' ')} select * from dual`;
     return { query, params: args };
   }
 }
