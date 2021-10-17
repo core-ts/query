@@ -3,7 +3,7 @@ import {Attribute, Attributes, Statement, StringMap} from './metadata';
 import {buildDollarParam, buildMsSQLParam, buildOracleParam, buildQuery, buildSort as bs, LikeType} from './query';
 import {buildFromQuery, oracle, SearchResult} from './search';
 
-export const postgre = 'postgre';
+export const postgres = 'postgres';
 export const mssql = 'mssql';
 export const mysql = 'mysql';
 export const sqlite = 'sqlite';
@@ -43,7 +43,7 @@ export class SearchBuilder<T, S> {
       } else {
         if (provider === oracle) {
           this.buildParam = buildOracleParam;
-        } else if (provider === postgre) {
+        } else if (provider === postgres) {
           this.buildParam = buildDollarParam;
         } else if (provider === mssql) {
           this.buildParam = buildMsSQLParam;
@@ -57,7 +57,7 @@ export class SearchBuilder<T, S> {
     const st = (this.sort ? this.sort : 'sort');
     const sn = s[st] as string;
     delete s[st];
-    const x = (this.provider === postgre ? 'ilike' : this.buildParam);
+    const x = (this.provider === postgres ? 'ilike' : this.buildParam);
     const q2 = this.buildQuery(s, x, this.table, this.attributes, sn, fields, this.q, this.excluding, this.buildSort);
     if (this.fromDB) {
       return buildFromQuery(this.query, q2.query, q2.params, limit, skip, this.map, this.bools, this.provider, this.total).then(r => {

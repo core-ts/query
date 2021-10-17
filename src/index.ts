@@ -22,6 +22,19 @@ export * from './search';
 export * from './SearchBuilder';
 export * from './client';
 
+export interface Config {
+  connectString?: string | undefined;
+  host?: string | undefined;
+  port?: number;
+  server?: string | undefined;
+  database?: string | undefined;
+  user?: string | undefined;
+  password?: string | undefined;
+  multipleStatements?: boolean | undefined;
+  max?: number | undefined;
+  min?: number | undefined;
+  idleTimeoutMillis?: number | undefined;
+}
 // tslint:disable-next-line:class-name
 export class resource {
   static string?: boolean;
