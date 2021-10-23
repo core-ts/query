@@ -1,16 +1,16 @@
 import {Attribute, Attributes, Statement, StringMap} from './metadata';
 
-export function params(length: number, param: (i: number) => string, from?: number): string[] {
+export function params(length: number, p: (i: number) => string, from?: number): string[] {
   if (from === undefined || from == null) {
     from = 0;
   }
   const ps: string[] = [];
   for (let i = 1; i <= length; i++) {
-    ps.push(param(i + from));
+    ps.push(p(i + from));
   }
   return ps;
 }
-export function select<T>(obj: T, table: string, ks: Attribute[], buildParam: (i: number) => string, i?: number): Statement {
+export function select<T>(obj: T, table: string, ks: Attribute[], buildParam: (i: number) => string, i?: number): Statement|undefined {
   if (!i) {
     i = 1;
   }
@@ -27,17 +27,19 @@ export function select<T>(obj: T, table: string, ks: Attribute[], buildParam: (i
     const cols: string[] = [];
     const args: any[] = [];
     for (const k of ks) {
-      const field = (k.field ? k.field : k.name);
-      cols.push(`${field} = ${buildParam(i++)}`);
-      args.push(obj[k.name]);
+      if (k.name) {
+        const field = (k.field ? k.field : k.name);
+        cols.push(`${field} = ${buildParam(i++)}`);
+        args.push((obj as any)[k.name]);
+      }
     }
     const query = `select * from ${table} where ${cols.join(' and ')}`;
     return { query, params: args };
   } else {
-    return null;
+    return undefined;
   }
 }
-export function exist<T>(obj: T, table: string, ks: Attribute[], buildParam: (i: number) => string, col?: string, i?: number): Statement {
+export function exist<T>(obj: T, table: string, ks: Attribute[], buildParam: (i: number) => string, col?: string, i?: number): Statement|undefined {
   if (!i) {
     i = 1;
   }
@@ -57,17 +59,19 @@ export function exist<T>(obj: T, table: string, ks: Attribute[], buildParam: (i:
     const cols: string[] = [];
     const args: any[] = [];
     for (const k of ks) {
-      const field = (k.field ? k.field : k.name);
-      cols.push(`${field} = ${buildParam(i++)}`);
-      args.push(obj[k.name]);
+      if (k.name) {
+        const field = (k.field ? k.field : k.name);
+        cols.push(`${field} = ${buildParam(i++)}`);
+        args.push((obj as any)[k.name]);
+      }
     }
     const query = `select * from ${table} where ${cols.join(' and ')}`;
     return { query, params: args };
   } else {
-    return null;
+    return undefined;
   }
 }
-export function buildToDelete<T>(obj: T, table: string, ks: Attribute[], buildParam: (i: number) => string, i?: number): Statement {
+export function buildToDelete<T>(obj: T, table: string, ks: Attribute[], buildParam: (i: number) => string, i?: number): Statement|undefined {
   if (!i) {
     i = 1;
   }
@@ -84,14 +88,16 @@ export function buildToDelete<T>(obj: T, table: string, ks: Attribute[], buildPa
     const cols: string[] = [];
     const args: any[] = [];
     for (const k of ks) {
-      const field = (k.field ? k.field : k.name);
-      cols.push(`${field} = ${buildParam(i++)}`);
-      args.push(obj[k.name]);
+      if (k.name) {
+        const field = (k.field ? k.field : k.name);
+        cols.push(`${field} = ${buildParam(i++)}`);
+        args.push((obj as any)[k.name]);
+      }
     }
     const query = `delete from ${table} where ${cols.join(' and ')}`;
     return { query, params: args };
   } else {
-    return null;
+    return undefined;
   }
 }
 export function insert<T>(exec: (sql: string, args?: any[]) => Promise<number>, obj: T, table: string, attrs: Attributes, buildParam: (i: number) => string, ver?: string, i?: number): Promise<number> {
@@ -102,17 +108,18 @@ export function insert<T>(exec: (sql: string, args?: any[]) => Promise<number>, 
     return exec(stm.query, stm.params);
   }
 }
-export function buildToInsert<T>(obj: T, table: string, attrs: Attributes, buildParam: (i: number) => string, ver?: string, i?: number): Statement {
+export function buildToInsert<T>(obj: T, table: string, attrs: Attributes, buildParam: (i: number) => string, ver?: string, i?: number): Statement|undefined {
   if (!i) {
     i = 1;
   }
+  const o: any = obj;
   const ks = Object.keys(attrs);
   const cols: string[] = [];
   const values: string[] = [];
   const args: any[] = [];
   let isVersion = false;
   for (const k of ks) {
-    let v = obj[k];
+    let v = o[k];
     const attr = attrs[k];
     if (attr && !attr.ignored && !attr.noinsert) {
       if (v === undefined || v == null) {
@@ -163,7 +170,7 @@ export function buildToInsert<T>(obj: T, table: string, attrs: Attributes, build
     values.push(`${1}`);
   }
   if (cols.length === 0) {
-    return null;
+    return undefined;
   } else {
     const query = `insert into ${table}(${cols.join(',')})values(${values.join(',')})`;
     return { query, params: args };
@@ -180,7 +187,7 @@ export function insertBatch<T>(exec: (sql: string, args?: any[]) => Promise<numb
 function buildOracleParam(i: number): string {
   return ':' + i;
 }
-export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attributes, buildParam: ((i: number) => string) | boolean, ver?: string, i?: number): Statement {
+export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attributes, buildParam: ((i: number) => string) | boolean, ver?: string, i?: number): Statement|undefined {
   if (!i) {
     i = 1;
   }
@@ -201,7 +208,7 @@ export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attribute
       for (const k of ks) {
         const attr = attrs[k];
         if (attr && !attr.ignored && !attr.noinsert) {
-          let v = obj[k];
+          let v = (obj as any)[k];
           if (v === undefined || v === null) {
             v = attr.default;
           }
@@ -254,7 +261,7 @@ export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attribute
       const values: string[] = [];
       let isVersion = false;
       for (const k of ks) {
-        let v = obj[k];
+        let v = (obj as any)[k];
         const attr = attrs[k];
         if (attr && !attr.ignored && !attr.noinsert) {
           if (v === undefined || v == null) {
@@ -306,7 +313,7 @@ export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attribute
       }
       if (cols.length === 0) {
         if (notSkipInvalid) {
-          return null;
+          return undefined;
         }
       } else {
         const s = `into ${table}(${cols.join(',')})values(${values.join(',')})`;
@@ -314,7 +321,7 @@ export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attribute
       }
     }
     if (rows.length === 0) {
-      return null;
+      return undefined;
     }
     const query = `insert all ${rows.join(' ')} select * from dual`;
     return { query, params: args };
@@ -328,17 +335,18 @@ export function update<T>(exec: (sql: string, args?: any[]) => Promise<number>, 
     return exec(stm.query, stm.params);
   }
 }
-export function buildToUpdate<T>(obj: T, table: string, attrs: Attributes, buildParam: (i: number) => string, ver?: string, i?: number): Statement {
+export function buildToUpdate<T>(obj: T, table: string, attrs: Attributes, buildParam: (i: number) => string, ver?: string, i?: number): Statement|undefined {
   if (!i) {
     i = 1;
   }
+  const o: any = obj;
   const ks = Object.keys(attrs);
   const pks: Attribute[] = [];
   const colSet: string[] = [];
   const colQuery: string[] = [];
   const args: any[] = [];
   for (const k of ks) {
-    const v = obj[k];
+    const v = o[k];
     if (v !== undefined) {
       const attr = attrs[k];
       attr.name = k;
@@ -381,11 +389,12 @@ export function buildToUpdate<T>(obj: T, table: string, attrs: Attributes, build
     }
   }
   for (const pk of pks) {
-    const v = obj[pk.name];
+    const na = (pk.name ? pk.name : '');
+    const v = o[na];
     if (!v) {
-      return null;
+      return undefined;
     } else {
-      const attr = attrs[pk.name];
+      const attr = attrs[na];
       const field = (attr.field ? attr.field : pk.name);
       let x: string;
       if (v == null) {
@@ -412,7 +421,7 @@ export function buildToUpdate<T>(obj: T, table: string, attrs: Attributes, build
     }
   }
   if (ver && ver.length > 0) {
-    const v = obj[ver];
+    const v = o[ver];
     if (typeof v === 'number' && !isNaN(v)) {
       const attr = attrs[ver];
       if (attr) {
@@ -423,7 +432,7 @@ export function buildToUpdate<T>(obj: T, table: string, attrs: Attributes, build
     }
   }
   if (colSet.length === 0 || colQuery.length === 0) {
-    return null;
+    return undefined;
   } else {
     const query = `update ${table} set ${colSet.join(',')} where ${colQuery.join(' and ')}`;
     return { query, params: args };
@@ -437,22 +446,24 @@ export function updateBatch<T>(exec: (statements: Statement[]) => Promise<number
     return exec(stmts);
   }
 }
-export function buildToUpdateBatch<T>(objs: T[], table: string, attrs: Attributes, buildParam: (i: number) => string, notSkipInvalid?: boolean): Statement[] {
+export function buildToUpdateBatch<T>(objs: T[], table: string, attrs: Attributes, buildParam: (i: number) => string, notSkipInvalid?: boolean): Statement[]|undefined {
   const sts: Statement[] = [];
   const meta = metadata(attrs);
   if (!meta.keys || meta.keys.length === 0) {
-    return null;
+    return undefined;
   }
   for (const obj of objs) {
+    const o: any = obj;
     let i = 1;
-    const ks = Object.keys(obj);
+    const ks = Object.keys(o);
     const colSet: string[] = [];
     const colQuery: string[] = [];
     const args: any[] = [];
     for (const k of ks) {
-      const v = obj[k];
+      const v = o[k];
       if (v !== undefined) {
         const attr = attrs[k];
+        attr.name = k;
         if (attr && !attr.ignored && !attr.key && !attr.version && !attr.noupdate) {
           const field = (attr.field ? attr.field : k);
           let x: string;
@@ -489,11 +500,12 @@ export function buildToUpdateBatch<T>(objs: T[], table: string, attrs: Attribute
     }
     let valid = true;
     for (const pk of meta.keys) {
-      const v = obj[pk.name];
+      const na = (pk.name ? pk.name : '');
+      const v = o[na];
       if (!v) {
         valid = false;
       } else {
-        const attr = attrs[pk.name];
+        const attr = attrs[na];
         const field = (attr.field ? attr.field : pk.name);
         let x: string;
         if (v == null) {
@@ -521,12 +533,12 @@ export function buildToUpdateBatch<T>(objs: T[], table: string, attrs: Attribute
     }
     if (!valid || colSet.length === 0 || colQuery.length === 0) {
       if (notSkipInvalid) {
-        return null;
+        return undefined;
       }
     } else {
       const ver = meta.version;
       if (ver && ver.length > 0) {
-        const v = obj[ver];
+        const v = o[ver];
         if (typeof v === 'number' && !isNaN(v)) {
           const attr = attrs[ver];
           if (attr) {
@@ -543,7 +555,7 @@ export function buildToUpdateBatch<T>(objs: T[], table: string, attrs: Attribute
   }
   return sts;
 }
-export function version(attrs: Attributes): Attribute {
+export function version(attrs: Attributes): Attribute|undefined {
   const ks = Object.keys(attrs);
   for (const k of ks) {
     const attr = attrs[k];
@@ -554,7 +566,7 @@ export function version(attrs: Attributes): Attribute {
   }
   return undefined;
 }
-export function key(attrs: Attributes): Attribute {
+export function key(attrs: Attributes): Attribute|undefined {
   const ks = Object.keys(attrs);
   for (const k of ks) {
     const attr = attrs[k];
@@ -563,7 +575,7 @@ export function key(attrs: Attributes): Attribute {
       return attr;
     }
   }
-  return null;
+  return undefined;
 }
 export function keys(attrs: Attributes): Attribute[] {
   const ks = Object.keys(attrs);
@@ -604,8 +616,8 @@ export function metadata(attrs: Attributes): Metadata {
   const ats: Attribute[] = [];
   const bools: Attribute[] = [];
   const fields: string[] = [];
-  let ver: string;
   let isMap = false;
+  const m: Metadata = {keys: ats, fields};
   for (const k of ks) {
     const attr = attrs[k];
     attr.name = k;
@@ -619,7 +631,7 @@ export function metadata(attrs: Attributes): Metadata {
       bools.push(attr);
     }
     if (attr.version) {
-      ver = k;
+      m.version = k;
     }
     const field = (attr.field ? attr.field : k);
     const s = field.toLowerCase();
@@ -628,7 +640,6 @@ export function metadata(attrs: Attributes): Metadata {
       isMap = true;
     }
   }
-  const m: Metadata = {keys: ats, fields, version: ver};
   if (isMap) {
     m.map = mp;
   }
@@ -650,7 +661,7 @@ export function param(i: number): string {
 }
 export function setValue<T, V>(obj: T, path: string, value: V): void {
   const paths = path.split('.');
-  let o = obj;
+  let o: any = obj;
   for (let i = 0; i < paths.length - 1; i++) {
     const p = paths[i];
     if (p in o) {

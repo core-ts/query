@@ -92,7 +92,7 @@ export function map<T>(obj: T, m?: StringMap): any {
     if (!k0) {
       k0 = key;
     }
-    obj2[k0] = obj[key];
+    obj2[k0] = (obj as any)[key];
   }
   return obj2;
 }

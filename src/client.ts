@@ -49,7 +49,7 @@ export function buildStatements(s: Statement[]): JStatement[] {
   }
   return d;
 }
-export function toDates(args: any[]): number[] {
+export function toDates(args?: any[]): number[] {
   const d: number[] = [];
   if (!args || args.length === 0) {
     return d;
@@ -62,18 +62,11 @@ export function toDates(args: any[]): number[] {
   }
   return d;
 }
-export class ProxyClient implements Proxy {
+export class ProxyClient {
   constructor(protected httpRequest: HttpRequest, protected url: string) {
     this.query = this.query.bind(this);
     this.exec = this.exec.bind(this);
     this.execBatch = this.execBatch.bind(this);
-
-    this.beginTransaction = this.beginTransaction.bind(this);
-    this.commitTransaction = this.commitTransaction.bind(this);
-    this.rollbackTransaction = this.rollbackTransaction.bind(this);
-    this.queryWithTx = this.queryWithTx.bind(this);
-    this.execWithTx = this.execWithTx.bind(this);
-    this.execBatchWithTx = this.execBatchWithTx.bind(this);
 
     this.insert = this.insert.bind(this);
     this.update = this.update.bind(this);
@@ -83,6 +76,13 @@ export class ProxyClient implements Proxy {
     this.updateWithTx = this.updateWithTx.bind(this);
     this.insertBatchWithTx = this.insertBatchWithTx.bind(this);
     this.updateBatchWithTx = this.updateBatchWithTx.bind(this);
+
+    this.beginTransaction = this.beginTransaction.bind(this);
+    this.commitTransaction = this.commitTransaction.bind(this);
+    this.rollbackTransaction = this.rollbackTransaction.bind(this);
+    this.queryWithTx = this.queryWithTx.bind(this);
+    this.execWithTx = this.execWithTx.bind(this);
+    this.execBatchWithTx = this.execBatchWithTx.bind(this);
   }
   query<T>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[]): Promise<T[]> {
     const dates = toDates(args);
@@ -102,17 +102,18 @@ export class ProxyClient implements Proxy {
     const d = buildStatements(stmts);
     return this.httpRequest.post<number>(this.url + '/exec-batch', d);
   }
-  beginTransaction?(timeout?: number): Promise<string> {
+
+  beginTransaction(timeout?: number): Promise<string> {
     const st = (timeout && timeout > 0 ? '?timeout=' + timeout : '');
     return this.httpRequest.post<string>(this.url + '/begin' + st, '');
   }
-  commitTransaction?(tx: string): Promise<boolean> {
+  commitTransaction(tx: string): Promise<boolean> {
     return this.httpRequest.post<boolean>(this.url + '/end?tx=' + tx, '');
   }
-  rollbackTransaction?(tx: string): Promise<boolean> {
+  rollbackTransaction(tx: string): Promise<boolean> {
     return this.httpRequest.post<boolean>(this.url + '/end?roleback=true&tx=' + tx, '');
   }
-  queryWithTx?<T>(tx: string, commit: boolean, sql: string, args?: any[], m?: StringMap, bools?: Attribute[]): Promise<T[]> {
+  queryWithTx<T>(tx: string, commit: boolean, sql: string, args?: any[], m?: StringMap, bools?: Attribute[]): Promise<T[]> {
     const dates = toDates(args);
     const j: JStatement = {query: sql, params: args, dates};
     const sc = (commit ? '&commit=true' : '');
@@ -122,13 +123,13 @@ export class ProxyClient implements Proxy {
       return this.httpRequest.post<T[]>(this.url + '/query?tx=' + tx + sc, j);
     }
   }
-  execWithTx?(tx: string, commit: boolean, sql: string, args?: any[]): Promise<number> {
+  execWithTx(tx: string, commit: boolean, sql: string, args?: any[]): Promise<number> {
     const dates = toDates(args);
     const j: JStatement = {query: sql, params: args, dates};
     const sc = (commit ? '&commit=true' : '');
     return this.httpRequest.post<number>(this.url + '/exec?tx=' + tx + sc, j);
   }
-  execBatchWithTx?(tx: string, commit: boolean, stmts: Statement[]): Promise<number> {
+  execBatchWithTx(tx: string, commit: boolean, stmts: Statement[]): Promise<number> {
     const d = buildStatements(stmts);
     const sc = (commit ? '&commit=true' : '');
     return this.httpRequest.post<number>(this.url + '/exec-batch?tx=' + tx + sc, d);

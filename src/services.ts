@@ -19,6 +19,7 @@ export class SqlLoader<T, ID> {
     protected fromDB?: (v: T) => T) {
     if (Array.isArray(attrs)) {
       this.primaryKeys = attributes(attrs);
+      this.attributes = {} as any;
     } else {
       const m = metadata(attrs);
       this.attributes = attrs;
@@ -31,22 +32,26 @@ export class SqlLoader<T, ID> {
     this.load = this.load.bind(this);
     this.exist = this.exist.bind(this);
   }
-  metadata(): Attributes {
+  metadata(): Attributes|undefined {
     return this.attributes;
   }
   all(): Promise<T[]> {
     const sql = `select * from ${this.table}`;
     return this.query(sql, [], this.map);
   }
-  load(id: ID, ctx?: any): Promise<T> {
+  load(id: ID, ctx?: any): Promise<T|null> {
     const stmt = select<ID>(id, this.table, this.primaryKeys, this.param);
-    if (this.fromDB) {
+    if (!stmt) {
+      throw new Error('cannot build query by id');
+    }
+    const fn = this.fromDB;
+    if (fn) {
       return this.query(stmt.query, stmt.params, this.map, ctx).then(res => {
         if (!res || res.length === 0) {
           return null;
         } else {
           const obj = res[0];
-          return this.fromDB(obj);
+          return fn(obj);
         }
       });
     } else {
@@ -56,6 +61,9 @@ export class SqlLoader<T, ID> {
   exist(id: ID, ctx?: any): Promise<boolean> {
     const field = (this.primaryKeys[0].field ? this.primaryKeys[0].field : this.primaryKeys[0].name);
     const stmt = exist<ID>(id, this.table, this.primaryKeys, this.param, field);
+    if (!stmt) {
+      throw new Error('cannot build query by id');
+    }
     return this.query(stmt.query, stmt.params, this.map, undefined, ctx).then(res => (!res || res.length === 0) ? false : true);
   }
 }

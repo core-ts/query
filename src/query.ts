@@ -3,7 +3,7 @@ import {Attribute, Attributes, Statement, StringMap} from './metadata';
 
 export type LikeType = 'like' | 'ilike';
 
-export function buildSort(sort: string, map?: Attributes|StringMap): string {
+export function buildSort(sort?: string, map?: Attributes|StringMap): string {
   if (!sort || sort.length === 0) {
     return '';
   }
@@ -52,7 +52,11 @@ export function buildOracleParam(i: number): string {
 export function buildDollarParam(i: number): string {
   return '$' + i;
 }
-export function buildQuery<S>(s: S, bparam: LikeType|((i: number ) => string), table?: string, attrs?: Attributes, sort?: string, fields?: string[], sq?: string, strExcluding?: string, buildSort3?: (sort: string, map?: Attributes|StringMap) => string): Statement {
+export function buildQuery<S>(filter: S, bparam: LikeType|((i: number ) => string), table?: string, attrs?: Attributes, sort?: string, fields?: string[], sq?: string, strExcluding?: string, buildSort3?: (sort?: string, map?: Attributes|StringMap) => string): Statement|undefined {
+  if (!table || !attrs) {
+    return undefined;
+  }
+  const s: any = filter;
   let like = 'like';
   let param: (i: number ) => string;
   if (typeof bparam === 'string') {
@@ -67,8 +71,8 @@ export function buildQuery<S>(s: S, bparam: LikeType|((i: number ) => string), t
     like = 'like';
   }
   const filters: string[] = [];
-  let q: string;
-  let excluding: string[]|number[];
+  let q: string|undefined;
+  let excluding: string[]|number[]|undefined;
   const args: any[] = [];
   if (sq && sq.length > 0) {
     q = s[sq];
@@ -220,7 +224,7 @@ export function buildQuery<S>(s: S, bparam: LikeType|((i: number ) => string), t
           qfilters.push(`${field} ${like} ${param(i++)}`);
           args.push('%' + q + '%');
         }
-        c.push(buildQ(field, attr.match, q));
+        c.push(buildQ(field, q, attr.match));
       }
     }
     if (qfilters.length > 0) {
@@ -238,7 +242,7 @@ export function buildQuery<S>(s: S, bparam: LikeType|((i: number ) => string), t
     return { query: sql, params: args };
   }
 }
-export function getId(attrs: Attributes): string {
+export function getId(attrs: Attributes): string|undefined {
   const qkeys = Object.keys(attrs);
   for (const key of qkeys) {
     const attr = attrs[key];
@@ -270,8 +274,8 @@ export function buildFieldsByAttributes(attrs: Attributes, fields?: string[]): s
 export function isEmpty(s: string): boolean {
   return !(s && s.length > 0);
 }
-export function buildQ(field: string, match: string, q: string): any {
-  const o = {};
+export function buildQ(field: string, q: string, match?: string): any {
+  const o: any = {};
   if (match === 'equal') {
     o[field] = q;
   } else if (match === 'prefix') {
@@ -293,7 +297,7 @@ export function buildMatch(v: string, match: string): string|RegExp {
 export function isDateRange<T>(obj: T): boolean {
   const keys: string[] = Object.keys(obj);
   for (const key of keys) {
-    const v = obj[key];
+    const v = (obj as any)[key];
     if (!(v instanceof Date)) {
       return false;
     }
@@ -303,7 +307,7 @@ export function isDateRange<T>(obj: T): boolean {
 export function isNumberRange<T>(obj: T): boolean {
   const keys: string[] = Object.keys(obj);
   for (const key of keys) {
-    const v = obj[key];
+    const v = (obj as any)[key];
     if (typeof v !== 'number') {
       return false;
     }

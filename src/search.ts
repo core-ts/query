@@ -4,8 +4,8 @@ export interface SearchResult<T> {
   list: T[];
   total?: number;
 }
-export function buildFromQuery<T>(query: (sql: string, args?: any[], m?: StringMap, bools?: Attribute[]) => Promise<T[]>, sql: string, params: any[], limit: number, offset: number, mp?: StringMap, bools?: Attribute[], provider?: string, totalCol?: string): Promise<SearchResult<T>> {
-  if (limit <= 0) {
+export function buildFromQuery<T>(query: (sql: string, args?: any[], m?: StringMap, bools?: Attribute[]) => Promise<T[]>, sql: string, params?: any[], limit?: number, offset?: number, mp?: StringMap, bools?: Attribute[], provider?: string, totalCol?: string): Promise<SearchResult<T>> {
+  if (!limit || limit <= 0) {
     return query(sql, params, mp, bools).then(list => {
       const total = (list ? list.length : undefined);
       return {list, total};
@@ -27,7 +27,7 @@ export function buildFromQuery<T>(query: (sql: string, args?: any[], m?: StringM
         } else {
           const r0 = r[0];
           const keys = Object.keys(r0);
-          return r0[keys[0]] as number;
+          return (r0 as any)[keys[0]] as number;
         }
       });
       return Promise.all([resultPromise, countPromise]).then(r => {
@@ -37,7 +37,7 @@ export function buildFromQuery<T>(query: (sql: string, args?: any[], m?: StringM
     }
   }
 }
-export function queryAndCount<T>(query: (sql: string, args?: any[], m?: StringMap, bools?: Attribute[]) => Promise<T[]>, sql: string, params: any[], total: string, mp?: StringMap, bools?: Attribute[]): Promise<SearchResult<T>> {
+export function queryAndCount<T>(query: (sql: string, args?: any[], m?: StringMap, bools?: Attribute[]) => Promise<T[]>, sql: string, params: any[]|undefined, total: string, mp?: StringMap, bools?: Attribute[]): Promise<SearchResult<T>> {
   if (!total || total.length === 0) {
     total = 'total';
   }
@@ -45,9 +45,9 @@ export function queryAndCount<T>(query: (sql: string, args?: any[], m?: StringMa
     if (!list || list.length === 0) {
       return {list: [], total: 0};
     }
-    const t = list[0][total] as number;
+    const t = (list[0] as any)[total] as number;
     for (const obj of list) {
-      delete obj[total];
+      delete (obj as any)[total];
     }
     return {list, total: t};
   });
@@ -57,7 +57,7 @@ const s = 'select';
 const S = 'SELECT';
 const d = ' distinct ';
 const D = ' DISTINCT ';
-export function buildPagingQuery(sql: string, limit: number, offset: number, provider?: string): string {
+export function buildPagingQuery(sql: string, limit: number, offset?: number, provider?: string): string {
   if (limit === undefined || limit == null) {
     limit = 0;
   }
@@ -70,9 +70,12 @@ export function buildPagingQuery(sql: string, limit: number, offset: number, pro
     return buildPagingQueryForOracle(sql, limit, offset);
   }
 }
-export function buildPagingQueryForOracle(sql: string, limit: number, offset: number, total?: string) {
+export function buildPagingQueryForOracle(sql: string, limit: number, offset?: number, total?: string) {
   if (!total || total.length === 0) {
     total = 'total';
+  }
+  if (!offset) {
+    offset = 0;
   }
   let l = d.length;
   let i = sql.indexOf(d);
