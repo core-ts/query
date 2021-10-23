@@ -10,6 +10,8 @@ export {SqlSearchLoader as SearchRepository};
 export {SqlSearchLoader as SearchService};
 export {SqlSearchWriter as GenericSearchRepository};
 export {SqlSearchWriter as GenericSearchService};
+export {SqlSearchWriter as SqlRepository};
+export {SqlSearchWriter as SqlService};
 export {SqlSearchWriter as Repository};
 export {SqlSearchWriter as Service};
 export {createSqlWriter as createGenericRepository};
