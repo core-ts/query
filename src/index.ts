@@ -6,12 +6,18 @@ export {SqlLoader as SqlLoadService};
 export {SqlWriter as SqlGenericService};
 export {SqlSearchLoader as ViewSearchRepository};
 export {SqlSearchLoader as ViewSearchService};
+export {SqlSearchLoader as SearchRepository};
+export {SqlSearchLoader as SearchService};
 export {SqlSearchWriter as GenericSearchRepository};
 export {SqlSearchWriter as GenericSearchService};
+export {SqlSearchWriter as Repository};
+export {SqlSearchWriter as Service};
 export {createSqlWriter as createGenericRepository};
 export {createSqlWriter as createGenericService};
 export {createSqlSearchWriter as createGenericSearchRepository};
 export {createSqlSearchWriter as createGenericSearchService};
+export {createSqlSearchWriter as createRepository};
+export {createSqlSearchWriter as createService};
 
 export * from './metadata';
 export * from './build';
