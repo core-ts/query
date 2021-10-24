@@ -53,7 +53,11 @@ export class SearchBuilder<T, S> {
       }
       this.total = (total && total.length > 0 ? total : 'total');
     }
-  search(s: S, limit?: number, skip?: number, fields?: string[]): Promise<SearchResult<T>> {
+  search(s: S, limit?: number, offset?: number|string, fields?: string[]): Promise<SearchResult<T>> {
+    let skip = 0;
+    if (typeof offset === 'number' && offset > 0) {
+      skip = offset;
+    }
     const st = (this.sort ? this.sort : 'sort');
     const sn = (s as any)[st] as string;
     delete (s as any)[st];

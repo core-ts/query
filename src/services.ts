@@ -2,7 +2,7 @@ import {attributes, buildToDelete, buildToInsert, buildToUpdate, exist, metadata
 import {Attribute, Attributes, Statement, StringMap} from './metadata';
 import {SearchResult} from './search';
 
-export interface SearchModel {
+export interface Filter {
   fields?: string[];
   sort?: string;
   q?: string;
@@ -27,12 +27,14 @@ export class SqlLoader<T, ID> {
       this.map = m.map;
       this.bools = m.bools;
     }
-    this.metadata = this.metadata.bind(this);
+    if (this.metadata) {
+      this.metadata = this.metadata.bind(this);
+    }
     this.all = this.all.bind(this);
     this.load = this.load.bind(this);
     this.exist = this.exist.bind(this);
   }
-  metadata(): Attributes|undefined {
+  metadata?(): Attributes {
     return this.attributes;
   }
   all(): Promise<T[]> {
@@ -67,7 +69,7 @@ export class SqlLoader<T, ID> {
     return this.query(stmt.query, stmt.params, this.map, undefined, ctx).then(res => (!res || res.length === 0) ? false : true);
   }
 }
-export class SqlSearchLoader<T, ID, S extends SearchModel> extends SqlLoader<T, ID> {
+export class SqlSearchLoader<T, ID, S extends Filter> extends SqlLoader<T, ID> {
   constructor(
       protected find: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>,
       table: string,
@@ -159,7 +161,7 @@ export class SqlWriter<T, ID> extends SqlLoader<T, ID> {
     }
   }
 }
-export class SqlSearchWriter<T, ID, S extends SearchModel> extends SqlWriter<T, ID> {
+export class SqlSearchWriter<T, ID, S extends Filter> extends SqlWriter<T, ID> {
   constructor(
       protected find: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>,
       table: string,
@@ -177,7 +179,7 @@ export class SqlSearchWriter<T, ID, S extends SearchModel> extends SqlWriter<T, 
     return this.find(s, limit, offset, fields);
   }
 }
-export function createSqlSearchWriter<T, ID, S extends SearchModel>(
+export function createSqlSearchWriter<T, ID, S extends Filter>(
   find: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>,
   table: string,
   manager: Manager,
