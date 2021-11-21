@@ -34,7 +34,7 @@ export class SqlLoader<T, ID> {
     this.load = this.load.bind(this);
     this.exist = this.exist.bind(this);
   }
-  metadata?(): Attributes {
+  metadata?(): Attributes|undefined {
     return this.attributes;
   }
   all(): Promise<T[]> {
@@ -95,7 +95,7 @@ export function createSqlWriter<T, ID>(table: string,
     buildParam: (i: number) => string,
     toDB?: (v: T) => T,
     fromDB?: (v: T) => T) {
-  const writer = new SqlWriter<T, ID>(table, manager.query, manager.exec, attrs, buildParam, toDB, fromDB, manager.execBatch);
+  const writer = new SqlWriter<T, ID>(table, manager.query, manager.exec, attrs, buildParam, toDB, fromDB);
   return writer;
 }
 
@@ -107,8 +107,7 @@ export class SqlWriter<T, ID> extends SqlLoader<T, ID> {
     attrs: Attributes,
     buildParam: (i: number) => string,
     protected toDB?: (v: T) => T,
-    fromDB?: (v: T) => T,
-    public execBatch?: (statements: Statement[], firstSuccess?: boolean, ctx?: any) => Promise<number>) {
+    fromDB?: (v: T) => T) {
     super(table, query, attrs, buildParam, fromDB);
     const x = version(attrs);
     if (x) {
@@ -170,9 +169,8 @@ export class SqlSearchWriter<T, ID, S extends Filter> extends SqlWriter<T, ID> {
       attrs: Attributes,
       buildParam: (i: number) => string,
       toDB?: (v: T) => T,
-      fromDB?: (v: T) => T,
-      execBatch?: (statements: Statement[], firstSuccess?: boolean, ctx?: any) => Promise<number>) {
-    super(table, query, exec, attrs, buildParam, toDB, fromDB, execBatch);
+      fromDB?: (v: T) => T) {
+    super(table, query, exec, attrs, buildParam, toDB, fromDB);
     this.search = this.search.bind(this);
   }
   search(s: S, limit?: number, offset?: number|string, fields?: string[]): Promise<SearchResult<T>> {
@@ -187,6 +185,6 @@ export function createSqlSearchWriter<T, ID, S extends Filter>(
   buildParam: (i: number) => string,
   toDB?: (v: T) => T,
   fromDB?: (v: T) => T) {
-const writer = new SqlSearchWriter<T, ID, S>(find, table, manager.query, manager.exec, attrs, buildParam, toDB, fromDB, manager.execBatch);
+const writer = new SqlSearchWriter<T, ID, S>(find, table, manager.query, manager.exec, attrs, buildParam, toDB, fromDB);
 return writer;
 }
