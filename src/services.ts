@@ -61,7 +61,7 @@ export class SqlLoader<T, ID> {
     }
   }
   exist(id: ID, ctx?: any): Promise<boolean> {
-    const field = (this.primaryKeys[0].field ? this.primaryKeys[0].field : this.primaryKeys[0].name);
+    const field = (this.primaryKeys[0].column ? this.primaryKeys[0].column : this.primaryKeys[0].name);
     const stmt = exist<ID>(id, this.table, this.primaryKeys, this.param, field);
     if (!stmt) {
       throw new Error('cannot build query by id');

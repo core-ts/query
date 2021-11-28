@@ -38,8 +38,8 @@ export function getField(name: string, map?: Attributes|StringMap): string {
   if (typeof x === 'string') {
     return x;
   }
-  if (x.field) {
-    return x.field;
+  if (x.column) {
+    return x.column;
   }
   return name;
 }
@@ -100,7 +100,7 @@ export function buildQuery<S>(filter: S, bparam: LikeType|((i: number ) => strin
     if (v !== undefined && v != null) {
       const attr: Attribute = attrs[key];
       if (attr) {
-        field = (attr.field ? attr.field : key);
+        field = (attr.column ? attr.column : key);
         if (typeof v === 'string') {
           if (v.length !== 0) {
             if (attr.q) {
@@ -247,7 +247,7 @@ export function getId(attrs: Attributes): string|undefined {
   for (const key of qkeys) {
     const attr = attrs[key];
     if (attr.key) {
-      const field = (attr.field ? attr.field : key);
+      const field = (attr.column ? attr.column : key);
       return field;
     }
   }
@@ -261,7 +261,7 @@ export function buildFieldsByAttributes(attrs: Attributes, fields?: string[]): s
   for (const f of fields) {
     const attr = attrs[f];
     if (attr) {
-      const field = (attr.field ? attr.field : f);
+      const field = (attr.column ? attr.column : f);
       cols.push(field);
     }
   }

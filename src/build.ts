@@ -15,7 +15,7 @@ export function select<T>(obj: T, table: string, ks: Attribute[], buildParam: (i
     i = 1;
   }
   if (ks.length === 1) {
-    const field = (ks[0].field ? ks[0].field : ks[0].name);
+    const field = (ks[0].column ? ks[0].column : ks[0].name);
     if (typeof obj === 'number') {
       const query = `select * from ${table} where ${field} = ${obj}`;
       return { query, params: [] };
@@ -28,7 +28,7 @@ export function select<T>(obj: T, table: string, ks: Attribute[], buildParam: (i
     const args: any[] = [];
     for (const k of ks) {
       if (k.name) {
-        const field = (k.field ? k.field : k.name);
+        const field = (k.column ? k.column : k.name);
         cols.push(`${field} = ${buildParam(i++)}`);
         args.push((obj as any)[k.name]);
       }
@@ -47,7 +47,7 @@ export function exist<T>(obj: T, table: string, ks: Attribute[], buildParam: (i:
     col = '*';
   }
   if (ks.length === 1) {
-    const field = (ks[0].field ? ks[0].field : ks[0].name);
+    const field = (ks[0].column ? ks[0].column : ks[0].name);
     if (typeof obj === 'number') {
       const query = `select ${col} from ${table} where ${field} = ${obj}`;
       return { query, params: [] };
@@ -60,7 +60,7 @@ export function exist<T>(obj: T, table: string, ks: Attribute[], buildParam: (i:
     const args: any[] = [];
     for (const k of ks) {
       if (k.name) {
-        const field = (k.field ? k.field : k.name);
+        const field = (k.column ? k.column : k.name);
         cols.push(`${field} = ${buildParam(i++)}`);
         args.push((obj as any)[k.name]);
       }
@@ -76,7 +76,7 @@ export function buildToDelete<T>(obj: T, table: string, ks: Attribute[], buildPa
     i = 1;
   }
   if (ks.length === 1) {
-    const field = (ks[0].field ? ks[0].field : ks[0].name);
+    const field = (ks[0].column ? ks[0].column : ks[0].name);
     if (typeof obj === 'number') {
       const query = `delete from ${table} where ${field} = ${obj}`;
       return { query, params: [] };
@@ -89,7 +89,7 @@ export function buildToDelete<T>(obj: T, table: string, ks: Attribute[], buildPa
     const args: any[] = [];
     for (const k of ks) {
       if (k.name) {
-        const field = (k.field ? k.field : k.name);
+        const field = (k.column ? k.column : k.name);
         cols.push(`${field} = ${buildParam(i++)}`);
         args.push((obj as any)[k.name]);
       }
@@ -126,7 +126,7 @@ export function buildToInsert<T>(obj: T, table: string, attrs: Attributes, build
         v = attr.default;
       }
       if (v !== undefined && v != null) {
-        const field = (attr.field ? attr.field : k);
+        const field = (attr.column ? attr.column : k);
         cols.push(field);
         if (k === ver) {
           isVersion = true;
@@ -165,7 +165,7 @@ export function buildToInsert<T>(obj: T, table: string, attrs: Attributes, build
   }
   if (!isVersion && ver && ver.length > 0) {
     const attr = attrs[ver];
-    const field = (attr.field ? attr.field : ver);
+    const field = (attr.column ? attr.column : ver);
     cols.push(field);
     values.push(`${1}`);
   }
@@ -199,7 +199,7 @@ export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attribute
     for (const k of ks) {
       const attr = attrs[k];
       if (attr && !attr.ignored && !attr.noinsert) {
-        const field = (attr.field ? attr.field : k);
+        const field = (attr.column ? attr.column : k);
         cols.push(field);
       }
     }
@@ -268,7 +268,7 @@ export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attribute
             v = attr.default;
           }
           if (v !== undefined && v != null) {
-            const field = (attr.field ? attr.field : k);
+            const field = (attr.column ? attr.column : k);
             cols.push(field);
             if (k === ver) {
               isVersion = true;
@@ -307,7 +307,7 @@ export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attribute
       }
       if (!isVersion && ver && ver.length > 0) {
         const attr = attrs[ver];
-        const field = (attr.field ? attr.field : ver);
+        const field = (attr.column ? attr.column : ver);
         cols.push(field);
         values.push(`${1}`);
       }
@@ -354,7 +354,7 @@ export function buildToUpdate<T>(obj: T, table: string, attrs: Attributes, build
         if (attr.key) {
           pks.push(attr);
         } else if (!attr.noupdate) {
-          const field = (attr.field ? attr.field : k);
+          const field = (attr.column ? attr.column : k);
           let x: string;
           if (v == null) {
             x = 'null';
@@ -395,7 +395,7 @@ export function buildToUpdate<T>(obj: T, table: string, attrs: Attributes, build
       return undefined;
     } else {
       const attr = attrs[na];
-      const field = (attr.field ? attr.field : pk.name);
+      const field = (attr.column ? attr.column : pk.name);
       let x: string;
       if (v == null) {
         x = 'null';
@@ -425,7 +425,7 @@ export function buildToUpdate<T>(obj: T, table: string, attrs: Attributes, build
     if (typeof v === 'number' && !isNaN(v)) {
       const attr = attrs[ver];
       if (attr) {
-        const field = (attr.field ? attr.field : ver);
+        const field = (attr.column ? attr.column : ver);
         colSet.push(`${field}=${(1 + v)}`);
         colQuery.push(`${field}=${v}`);
       }
@@ -465,7 +465,7 @@ export function buildToUpdateBatch<T>(objs: T[], table: string, attrs: Attribute
         const attr = attrs[k];
         attr.name = k;
         if (attr && !attr.ignored && !attr.key && !attr.version && !attr.noupdate) {
-          const field = (attr.field ? attr.field : k);
+          const field = (attr.column ? attr.column : k);
           let x: string;
           if (v == null) {
             x = 'null';
@@ -506,7 +506,7 @@ export function buildToUpdateBatch<T>(objs: T[], table: string, attrs: Attribute
         valid = false;
       } else {
         const attr = attrs[na];
-        const field = (attr.field ? attr.field : pk.name);
+        const field = (attr.column ? attr.column : pk.name);
         let x: string;
         if (v == null) {
           x = 'null';
@@ -542,7 +542,7 @@ export function buildToUpdateBatch<T>(objs: T[], table: string, attrs: Attribute
         if (typeof v === 'number' && !isNaN(v)) {
           const attr = attrs[ver];
           if (attr) {
-            const field = (attr.field ? attr.field : ver);
+            const field = (attr.column ? attr.column : ver);
             colSet.push(`${field}=${(1 + v)}`);
             colQuery.push(`${field}=${v}`);
           }
@@ -595,7 +595,7 @@ export function buildMap(attrs: Attributes): StringMap {
   for (const k of ks) {
     const attr = attrs[k];
     attr.name = k;
-    const field = (attr.field ? attr.field : k);
+    const field = (attr.column ? attr.column : k);
     const s = field.toLowerCase();
     if (s !== k) {
       mp[s] = k;
@@ -633,7 +633,7 @@ export function metadata(attrs: Attributes): Metadata {
     if (attr.version) {
       m.version = k;
     }
-    const field = (attr.field ? attr.field : k);
+    const field = (attr.column ? attr.column : k);
     const s = field.toLowerCase();
     if (s !== k) {
       mp[s] = k;
@@ -651,7 +651,7 @@ export function metadata(attrs: Attributes): Metadata {
 export function attributes(attrs: string[], isKey?: boolean) {
   const ks: Attribute[] = [];
   for (const s of attrs) {
-    const a: Attribute = {name: s, field: s, key: isKey};
+    const a: Attribute = {name: s, column: s, key: isKey};
     ks.push(a);
   }
   return ks;
