@@ -15,8 +15,8 @@ export class SqlLoader<T, ID> {
   constructor(public table: string,
     public query: (sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any) => Promise<T[]>,
     attrs: Attributes|string[],
-    protected param: (i: number) => string,
-    protected fromDB?: (v: T) => T) {
+    public param: (i: number) => string,
+    public fromDB?: (v: T) => T) {
     if (Array.isArray(attrs)) {
       this.primaryKeys = attributes(attrs);
       this.attributes = {} as any;
@@ -85,31 +85,23 @@ export class SqlSearchLoader<T, ID, S extends Filter> extends SqlLoader<T, ID> {
   }
 }
 export interface Manager {
+  param(i: number): string;
   exec(sql: string, args?: any[], ctx?: any): Promise<number>;
   execBatch(statements: Statement[], firstSuccess?: boolean, ctx?: any): Promise<number>;
   query<T>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any): Promise<T[]>;
 }
-export function createSqlWriter<T, ID>(table: string,
-    manager: Manager,
-    attrs: Attributes,
-    buildParam: (i: number) => string,
-    toDB?: (v: T) => T,
-    fromDB?: (v: T) => T) {
-  const writer = new SqlWriter<T, ID>(table, manager.query, manager.exec, attrs, buildParam, toDB, fromDB);
-  return writer;
-}
-
 export class SqlWriter<T, ID> extends SqlLoader<T, ID> {
   version?: string;
-  constructor(table: string,
-    query: (sql: string, args?: any[], m?: StringMap, ctx?: any) => Promise<T[]>,
-    public exec: (sql: string, args?: any[], ctx?: any) => Promise<number>,
+  exec: (sql: string, args?: any[], ctx?: any) => Promise<number>;
+  execBatch: (statements: Statement[], firstSuccess?: boolean, ctx?: any) => Promise<number>;
+  constructor(manager: Manager, table: string,
     attrs: Attributes,
-    buildParam: (i: number) => string,
-    protected toDB?: (v: T) => T,
+    public toDB?: (v: T) => T,
     fromDB?: (v: T) => T) {
-    super(table, query, attrs, buildParam, fromDB);
+    super(table, manager.query, attrs, manager.param, fromDB);
     const x = version(attrs);
+    this.exec = manager.exec;
+    this.execBatch = manager.execBatch;
     if (x) {
       this.version = x.name;
     }
@@ -163,28 +155,15 @@ export class SqlWriter<T, ID> extends SqlLoader<T, ID> {
 export class SqlSearchWriter<T, ID, S extends Filter> extends SqlWriter<T, ID> {
   constructor(
       protected find: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>,
+      manager: Manager,
       table: string,
-      query: (sql: string, args?: any[], m?: StringMap, ctx?: any) => Promise<T[]>,
-      exec: (sql: string, args?: any[], ctx?: any) => Promise<number>,
       attrs: Attributes,
-      buildParam: (i: number) => string,
       toDB?: (v: T) => T,
       fromDB?: (v: T) => T) {
-    super(table, query, exec, attrs, buildParam, toDB, fromDB);
+    super(manager, table, attrs, toDB, fromDB);
     this.search = this.search.bind(this);
   }
   search(s: S, limit?: number, offset?: number|string, fields?: string[]): Promise<SearchResult<T>> {
     return this.find(s, limit, offset, fields);
   }
-}
-export function createSqlSearchWriter<T, ID, S extends Filter>(
-  find: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>,
-  table: string,
-  manager: Manager,
-  attrs: Attributes,
-  buildParam: (i: number) => string,
-  toDB?: (v: T) => T,
-  fromDB?: (v: T) => T) {
-const writer = new SqlSearchWriter<T, ID, S>(find, table, manager.query, manager.exec, attrs, buildParam, toDB, fromDB);
-return writer;
 }

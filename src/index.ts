@@ -1,5 +1,5 @@
 import {Attribute, StringMap} from './metadata';
-import {createSqlSearchWriter, createSqlWriter, SqlLoader, SqlSearchLoader, SqlSearchWriter, SqlWriter} from './services';
+import {SqlLoader, SqlSearchLoader, SqlSearchWriter, SqlWriter} from './services';
 export {SqlLoader as SqlLoadRepository};
 export {SqlLoader as SqlViewRepository};
 export {SqlWriter as SqlGenericRepository};
@@ -23,12 +23,6 @@ export {SqlSearchWriter as SqlRepository};
 export {SqlSearchWriter as SqlService};
 export {SqlSearchWriter as Repository};
 export {SqlSearchWriter as Service};
-export {createSqlWriter as createGenericRepository};
-export {createSqlWriter as createGenericService};
-export {createSqlSearchWriter as createGenericSearchRepository};
-export {createSqlSearchWriter as createGenericSearchService};
-export {createSqlSearchWriter as createRepository};
-export {createSqlSearchWriter as createService};
 
 export * from './metadata';
 export * from './build';
