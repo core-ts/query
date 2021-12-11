@@ -85,6 +85,7 @@ export class SqlSearchLoader<T, ID, S extends Filter> extends SqlLoader<T, ID> {
   }
 }
 export interface Manager {
+  driver: string;
   param(i: number): string;
   exec(sql: string, args?: any[], ctx?: any): Promise<number>;
   execBatch(statements: Statement[], firstSuccess?: boolean, ctx?: any): Promise<number>;
