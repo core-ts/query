@@ -149,6 +149,9 @@ export function buildQuery<S>(filter: S, bparam: LikeType|((i: number ) => strin
               if (v['max']) {
                 filters.push(`${field} <= ${param(i++)}`);
                 args.push(v['max']);
+              } else if (v['top']) {
+                filters.push(`${field} < ${param(i++)}`);
+                args.push(v['top']);
               } else if (v['endDate']) {
                 filters.push(`${field} <= ${param(i++)}`);
                 args.push(v['endDate']);
@@ -177,6 +180,8 @@ export function buildQuery<S>(filter: S, bparam: LikeType|((i: number ) => strin
             if (isNumberRange(v)) {
               if (v['max']) {
                 filters.push(`${field} <= ${v['max']}`);
+              } else if (v['top']) {
+                filters.push(`${field} < ${v['top']}`);
               } else if (v['upper']) {
                 filters.push(`${field} < ${v['upper']}`);
               }
