@@ -1,8 +1,12 @@
+import {Checker} from './health';
+export {Checker as SqlChecker};
+
 import {Attribute, StringMap} from './metadata';
 import {SqlLoader, SqlSearchLoader, SqlSearchWriter, SqlWriter} from './services';
 export {SqlLoader as SqlLoadRepository};
 export {SqlLoader as SqlViewRepository};
 export {SqlWriter as SqlGenericRepository};
+export {SqlWriter as Repository};
 
 export {SqlLoader as SqlLoadService};
 export {SqlLoader as SqlViewService};
@@ -21,10 +25,10 @@ export {SqlSearchWriter as GenericSearchRepository};
 export {SqlSearchWriter as GenericSearchService};
 export {SqlSearchWriter as SqlRepository};
 export {SqlSearchWriter as SqlService};
-export {SqlSearchWriter as Repository};
 export {SqlSearchWriter as Service};
 
 export * from './metadata';
+export * from './health';
 export * from './build';
 export * from './services';
 export * from './batch';
