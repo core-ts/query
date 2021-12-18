@@ -13,7 +13,7 @@ export class SqlLoader<T, ID> {
   attributes: Attributes;
   bools?: Attribute[];
   constructor(public table: string,
-    public query: (sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any) => Promise<T[]>,
+    public query: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any) => Promise<K[]>,
     attrs: Attributes|string[],
     public param: (i: number) => string,
     public fromDB?: (v: T) => T) {
@@ -48,7 +48,7 @@ export class SqlLoader<T, ID> {
     }
     const fn = this.fromDB;
     if (fn) {
-      return this.query(stmt.query, stmt.params, this.map, ctx).then(res => {
+      return this.query<T>(stmt.query, stmt.params, this.map, ctx).then(res => {
         if (!res || res.length === 0) {
           return null;
         } else {
@@ -57,7 +57,7 @@ export class SqlLoader<T, ID> {
         }
       });
     } else {
-      return this.query(stmt.query, stmt.params, this.map).then(res => (!res || res.length === 0) ? null : res[0]);
+      return this.query<T>(stmt.query, stmt.params, this.map).then(res => (!res || res.length === 0) ? null : res[0]);
     }
   }
   exist(id: ID, ctx?: any): Promise<boolean> {
@@ -73,7 +73,7 @@ export class SqlSearchLoader<T, ID, S extends Filter> extends SqlLoader<T, ID> {
   constructor(
       protected find: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>,
       table: string,
-      query: (sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any) => Promise<T[]>,
+      query: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any) => Promise<K[]>,
       attrs: Attributes|string[],
       param: (i: number) => string,
       fromDB?: (v: T) => T) {
