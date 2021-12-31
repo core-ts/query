@@ -10,7 +10,7 @@ export const sqlite = 'sqlite';
 export class SearchBuilder<T, S> {
   map?: StringMap;
   bools?: Attribute[];
-  buildQuery: (s: S, bparam: LikeType|((i: number ) => string), table?: string, attrs?: Attributes, sort?: string, fields?: string[], sq?: string, strExcluding?: string, buildSort3?: (sort?: string, map?: Attributes|StringMap) => string) => Statement|undefined;
+  buildQuery: (s: S, bparam: LikeType|((i: number ) => string), sort?: string, buildSort3?: (sort?: string, map?: Attributes|StringMap) => string, attrs?: Attributes, table?: string, fields?: string[], sq?: string, strExcluding?: string) => Statement|undefined;
   q?: string;
   excluding?: string;
   buildSort?: (sort?: string, map?: Attributes|StringMap) => string;
@@ -19,7 +19,7 @@ export class SearchBuilder<T, S> {
   constructor(public query: (sql: string, args?: any[], m?: StringMap, bools?: Attribute[]) => Promise<T[]>, public table: string,
     public attributes?: Attributes,
     public provider?: string,
-    buildQ?: (s: S, bparam: LikeType|((i: number ) => string), table?: string, attrs?: Attributes, sort?: string, fields?: string[], sq?: string, strExcluding?: string, buildSort3?: (sort?: string, map?: Attributes|StringMap) => string) => Statement|undefined,
+    buildQ?: (s: S, bparam: LikeType|((i: number ) => string), sort?: string, buildSort3?: (sort?: string, map?: Attributes|StringMap) => string, attrs?: Attributes, table?: string, fields?: string[], sq?: string, strExcluding?: string) => Statement|undefined,
     public fromDB?: (v: T) => T,
     public sort?: string,
     q?: string,
@@ -62,7 +62,7 @@ export class SearchBuilder<T, S> {
     const sn = (s as any)[st] as string;
     delete (s as any)[st];
     const x = (this.provider === postgres ? 'ilike' : this.buildParam);
-    const q2 = this.buildQuery(s, x, this.table, this.attributes, sn, fields, this.q, this.excluding, this.buildSort);
+    const q2 = this.buildQuery(s, x, sn, this.buildSort, this.attributes, this.table, fields, this.q, this.excluding);
     if (!q2) {
       throw new Error('Cannot build query');
     }

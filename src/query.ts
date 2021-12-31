@@ -52,7 +52,7 @@ export function buildOracleParam(i: number): string {
 export function buildDollarParam(i: number): string {
   return '$' + i;
 }
-export function buildQuery<S>(filter: S, bparam: LikeType|((i: number ) => string), table?: string, attrs?: Attributes, sort?: string, fields?: string[], sq?: string, strExcluding?: string, buildSort3?: (sort?: string, map?: Attributes|StringMap) => string): Statement|undefined {
+export function buildQuery<S>(filter: S, bparam: LikeType|((i: number ) => string), sort?: string, buildSort3?: (sort?: string, map?: Attributes|StringMap) => string, attrs?: Attributes, table?: string, fields?: string[], sq?: string, strExcluding?: string): Statement|undefined {
   if (!table || !attrs) {
     return undefined;
   }
