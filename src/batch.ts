@@ -26,6 +26,7 @@ export class SqlInserter<T> {
     }
   }
 }
+// tslint:disable-next-line:max-classes-per-file
 export class SqlUpdater<T> {
   version?: string;
   constructor(public exec: (sql: string, args?: any[]) => Promise<number>, public table: string, public attributes: Attributes, public param: (i: number) => string, public map?: (v: T) => T) {
@@ -51,6 +52,7 @@ export class SqlUpdater<T> {
     }
   }
 }
+// tslint:disable-next-line:max-classes-per-file
 export class SqlBatchInserter<T> {
   version?: string;
   constructor(public exec: (sql: string, args?: any[]) => Promise<number>, public table: string, public attributes: Attributes, public param: ((i: number) => string)|boolean, public map?: (v: T) => T) {
@@ -80,6 +82,7 @@ export class SqlBatchInserter<T> {
     }
   }
 }
+// tslint:disable-next-line:max-classes-per-file
 export class SqlBatchUpdater<T> {
   version?: string;
   constructor(public execBatch: (statements: Statement[]) => Promise<number>, public table: string, public attributes: Attributes, public param: (i: number) => string, protected notSkipInvalid?: boolean, public map?: (v: T) => T) {

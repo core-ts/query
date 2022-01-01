@@ -54,6 +54,7 @@ export interface Config {
 export class resource {
   static string?: boolean;
 }
+// tslint:disable-next-line:max-classes-per-file
 export class Loader<T> {
   map?: StringMap;
   constructor(public query: (sql: string, args?: any[], m?: StringMap, bools?: Attribute[]) => Promise<T[]>, public sql: string, m?: StringMap, public bools?: Attribute[]) {
