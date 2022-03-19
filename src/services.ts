@@ -1,4 +1,4 @@
-import {attributes, buildToDelete, buildToInsert, buildToUpdate, exist, metadata, select, toString, version} from './build';
+import {attributes, buildToDelete, buildToInsert, buildToUpdate, exist, metadata, select, version} from './build';
 import {Attribute, Attributes, Statement, StringMap} from './metadata';
 import {SearchResult} from './search';
 
@@ -7,6 +7,17 @@ export interface Filter {
   sort?: string;
   q?: string;
 }
+export type Load<T, ID> = (id: ID, ctx?: any) => Promise<T|null>;
+export type Get<T, ID> = Load<T, ID>;
+export function useGet<T, ID>(table: string,
+  q: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any) => Promise<K[]>,
+  attrs: Attributes|string[],
+  param: (i: number) => string,
+  fromDB?: (v: T) => T): Load<T, ID> {
+  const l = new SqlLoader<T, ID>(table, q, attrs, param, fromDB);
+  return l.load;
+}
+export const useLoad = useGet;
 export class SqlLoader<T, ID> {
   primaryKeys: Attribute[];
   map?: StringMap;
