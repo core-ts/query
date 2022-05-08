@@ -427,8 +427,8 @@ export class SqlWriter<T, ID> extends SqlLoader<T, ID> {
       return Promise.resolve(0);
     }
   }
-  patch(obj: T, ctx?: any): Promise<number> {
-    return this.update(obj, ctx);
+  patch(obj: Partial<T>, ctx?: any): Promise<number> {
+    return this.update(obj as any, ctx);
   }
   delete(id: ID, ctx?: any): Promise<number> {
     const stmt = buildToDelete<ID>(id, this.table, this.primaryKeys, this.param);
