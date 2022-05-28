@@ -181,7 +181,34 @@ export class LogManager implements ExtManager {
   }
   exec(sql: string, args?: any[], ctx?: any): Promise<number> {
     const t1 = new Date();
-    return this.db.exec(sql, args, ctx);
+    return this.db.exec(sql, args, ctx).then(v => {
+      setTimeout(() => {
+        if (this.log) {
+          const d = diff(t1);
+          const obj: SimpleMap = {} ;
+          if (this.sql.length > 0) {
+            obj[this.sql] = getString(sql, args);
+          }
+          if (this.return.length > 0) {
+            obj[this.return] = v;
+          }
+          obj[this.duration] = d;
+          this.log('query', obj);
+        }
+      }, 0);
+      return v;
+    }).catch(er => {
+      setTimeout(() => {
+        const d = diff(t1);
+        const obj: SimpleMap = {};
+        if (this.sql.length > 0) {
+          obj[this.sql] = getString(sql, args);
+        }
+        obj[this.duration] = d;
+        this.error('error query: ' + buildString(er));
+      }, 0);
+      throw er;
+    });
   }
   execBatch(statements: Statement[], firstSuccess?: boolean, ctx?: any): Promise<number> {
     const t1 = new Date();
