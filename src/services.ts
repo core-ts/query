@@ -9,12 +9,13 @@ export interface Filter {
 }
 export type Load<T, ID> = (id: ID, ctx?: any) => Promise<T|null>;
 export type Get<T, ID> = Load<T, ID>;
-export function useGet<T, ID>(table: string,
+export function useGet<T, ID>(
   q: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any) => Promise<K[]>,
+  table: string,
   attrs: Attributes|string[],
   param: (i: number) => string,
   fromDB?: (v: T) => T): Load<T, ID> {
-  const l = new SqlLoader<T, ID>(table, q, attrs, param, fromDB);
+  const l = new SqlLoader<T, ID>(q, table, attrs, param, fromDB);
   return l.load;
 }
 export const useLoad = useGet;
@@ -23,8 +24,9 @@ export class SqlLoader<T, ID> {
   map?: StringMap;
   attributes: Attributes;
   bools?: Attribute[];
-  constructor(public table: string,
+  constructor(
     public query: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any) => Promise<K[]>,
+    public table: string,
     attrs: Attributes|string[],
     public param: (i: number) => string,
     public fromDB?: (v: T) => T) {
@@ -84,12 +86,12 @@ export class SqlLoader<T, ID> {
 export class SqlSearchLoader<T, ID, S extends Filter> extends SqlLoader<T, ID> {
   constructor(
       protected find: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>,
-      table: string,
       query: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any) => Promise<K[]>,
+      table: string,
       attrs: Attributes|string[],
       param: (i: number) => string,
       fromDB?: (v: T) => T) {
-    super(table, query, attrs, param, fromDB);
+    super(query, table, attrs, param, fromDB);
     this.search = this.search.bind(this);
   }
   search(s: S, limit?: number, offset?: number|string, fields?: string[]): Promise<SearchResult<T>> {
@@ -412,7 +414,7 @@ export class SqlWriter<T, ID> extends SqlLoader<T, ID> {
     attrs: Attributes,
     public toDB?: (v: T) => T,
     fromDB?: (v: T) => T) {
-    super(table, manager.query, attrs, manager.param, fromDB);
+    super(manager.query, table, attrs, manager.param, fromDB);
     const x = version(attrs);
     this.exec = manager.exec;
     this.execBatch = manager.execBatch;

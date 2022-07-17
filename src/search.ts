@@ -4,9 +4,9 @@ export interface SearchResult<T> {
   list: T[];
   total?: number;
 }
-export function buildFromQuery<T>(query: (sql: string, args?: any[], m?: StringMap, bools?: Attribute[]) => Promise<T[]>, sql: string, params?: any[], limit?: number, offset?: number, mp?: StringMap, bools?: Attribute[], provider?: string, totalCol?: string): Promise<SearchResult<T>> {
+export function buildFromQuery<T>(query: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[]) => Promise<K[]>, sql: string, params?: any[], limit?: number, offset?: number, mp?: StringMap, bools?: Attribute[], provider?: string, totalCol?: string): Promise<SearchResult<T>> {
   if (!limit || limit <= 0) {
-    return query(sql, params, mp, bools).then(list => {
+    return query<T>(sql, params, mp, bools).then(list => {
       const total = (list ? list.length : undefined);
       return {list, total};
     });
@@ -20,8 +20,8 @@ export function buildFromQuery<T>(query: (sql: string, args?: any[], m?: StringM
     } else {
       const sql2 = buildPagingQuery(sql, limit, offset);
       const countQuery = buildCountQuery(sql);
-      const resultPromise = query(sql2, params, mp, bools);
-      const countPromise = query(countQuery, params).then(r => {
+      const resultPromise = query<T>(sql2, params, mp, bools);
+      const countPromise = query<T>(countQuery, params).then(r => {
         if (!r || r.length === 0) {
           return 0;
         } else {
@@ -37,11 +37,11 @@ export function buildFromQuery<T>(query: (sql: string, args?: any[], m?: StringM
     }
   }
 }
-export function queryAndCount<T>(query: (sql: string, args?: any[], m?: StringMap, bools?: Attribute[]) => Promise<T[]>, sql: string, params: any[]|undefined, total: string, mp?: StringMap, bools?: Attribute[]): Promise<SearchResult<T>> {
+export function queryAndCount<T>(query: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[]) => Promise<K[]>, sql: string, params: any[]|undefined, total: string, mp?: StringMap, bools?: Attribute[]): Promise<SearchResult<T>> {
   if (!total || total.length === 0) {
     total = 'total';
   }
-  return query(sql, params, mp, bools).then(list => {
+  return query<T>(sql, params, mp, bools).then(list => {
     if (!list || list.length === 0) {
       return {list: [], total: 0};
     }
