@@ -82,6 +82,7 @@ export class SearchBuilder<T, S> {
     }
   }
 }
+// tslint:disable-next-line:max-classes-per-file
 export class Query<T, ID, S> extends SearchBuilder<T, S> {
   primaryKeys: Attribute[];
   map?: StringMap;

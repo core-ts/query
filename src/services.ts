@@ -83,6 +83,145 @@ export class SqlLoader<T, ID> {
   }
 }
 // tslint:disable-next-line:max-classes-per-file
+export class SqlLoadRepository<T, K1, K2> {
+  map?: StringMap;
+  attributes: Attributes;
+  bools?: Attribute[];
+  id1Col: string;
+  id2Col: string;
+  constructor(
+    public query: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any) => Promise<K[]>,
+    public table: string,
+    attrs: Attributes,
+    public param: (i: number) => string,
+    public id1Field: string,
+    public id2Field: string,
+    public fromDB?: (v: T) => T,
+    id1Col?: string,
+    id2Col?: string) {
+
+    const m = metadata(attrs);
+    this.attributes = attrs;
+    this.map = m.map;
+    this.bools = m.bools;
+
+    if (this.metadata) {
+      this.metadata = this.metadata.bind(this);
+    }
+    this.all = this.all.bind(this);
+    this.load = this.load.bind(this);
+    this.exist = this.exist.bind(this);
+    if (id1Col && id1Col.length > 0) {
+      this.id1Col = id1Col;
+    } else {
+      const c = attrs[this.id1Field];
+      if (c) {
+        this.id1Col = (c.column && c.column.length > 0 ? c.column : this.id1Field);
+      } else {
+        this.id1Col = this.id1Field;
+      }
+    }
+    if (id2Col && id2Col.length > 0) {
+      this.id2Col = id2Col;
+    } else {
+      const c = attrs[this.id2Field];
+      if (c) {
+        this.id2Col = (c.column && c.column.length > 0 ? c.column : this.id2Field);
+      } else {
+        this.id2Col = this.id2Field;
+      }
+    }
+  }
+  metadata?(): Attributes|undefined {
+    return this.attributes;
+  }
+  all(): Promise<T[]> {
+    const sql = `select * from ${this.table}`;
+    return this.query(sql, [], this.map);
+  }
+  load(id1: K1, id2: K2, ctx?: any): Promise<T|null> {
+    return this.query<T>(`select * from ${this.table} where ${this.id1Col} = ${this.param(1)} and ${this.id2Col} = ${this.param(2)}`, [id1, id2], this.map, undefined, ctx).then(objs => {
+      if (!objs || objs.length == 0) {
+        return null;
+      } else {
+        const fn = this.fromDB;
+        if (fn) {
+          return fn(objs[0]);
+        } else {
+          return objs[0];
+        }
+      }
+    });
+  }
+  exist(id1: K1, id2: K2, ctx?: any): Promise<boolean> {
+    return this.query<T>(`select ${this.id1Col} from ${this.table} where ${this.id1Col} = ${this.param(1)} and ${this.id2Col} = ${this.param(2)}`, [id1, id2], undefined, undefined, ctx).then(objs => {
+      return (objs && objs.length > 0 ? true : false);
+    });
+  }
+}
+// tslint:disable-next-line:max-classes-per-file
+export class GenericRepository<T, K1, K2> extends SqlLoadRepository<T, K1, K2> {
+  version?: string;
+  exec: (sql: string, args?: any[], ctx?: any) => Promise<number>;
+  execBatch: (statements: Statement[], firstSuccess?: boolean, ctx?: any) => Promise<number>;
+  constructor(manager: Manager, table: string,
+    attrs: Attributes,
+    id1Field: string,
+    id2Field: string,
+    public toDB?: (v: T) => T,
+    fromDB?: (v: T) => T,
+    id1Col?: string,
+    id2Col?: string) {
+    super(manager.query, table, attrs, manager.param, id1Field, id2Field, fromDB, id1Col, id2Col);
+    const x = version(attrs);
+    this.exec = manager.exec;
+    this.execBatch = manager.execBatch;
+    if (x) {
+      this.version = x.name;
+    }
+    this.insert = this.insert.bind(this);
+    this.update = this.update.bind(this);
+    this.patch = this.patch.bind(this);
+    this.delete = this.delete.bind(this);
+  }
+  insert(obj: T, ctx?: any): Promise<number> {
+    let obj2 = obj;
+    if (this.toDB) {
+      obj2 = this.toDB(obj);
+    }
+    const stmt = buildToInsert(obj2, this.table, this.attributes, this.param, this.version);
+    if (stmt) {
+      return this.exec(stmt.query, stmt.params, ctx).catch(err => {
+        if (err && err.error === 'duplicate') {
+          return 0;
+        } else {
+          throw err;
+        }
+      });
+    } else {
+      return Promise.resolve(0);
+    }
+  }
+  update(obj: T, ctx?: any): Promise<number> {
+    let obj2 = obj;
+    if (this.toDB) {
+      obj2 = this.toDB(obj);
+    }
+    const stmt = buildToUpdate(obj2, this.table, this.attributes, this.param, this.version);
+    if (stmt) {
+      return this.exec(stmt.query, stmt.params, ctx);
+    } else {
+      return Promise.resolve(0);
+    }
+  }
+  patch(obj: Partial<T>, ctx?: any): Promise<number> {
+    return this.update(obj as any, ctx);
+  }
+  delete(id1: K1, id2: K2, ctx?: any): Promise<number> {
+    return this.exec(`delete from ${this.table} where ${this.id1Col} = ${this.param(1)} and ${this.id2Col} = ${this.param(2)}`, [id1, id2], ctx);
+  }
+}
+// tslint:disable-next-line:max-classes-per-file
 export class SqlSearchLoader<T, ID, S extends Filter> extends SqlLoader<T, ID> {
   constructor(
       protected find: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>,

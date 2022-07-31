@@ -3,7 +3,7 @@ export {Checker as SqlChecker};
 
 import {Attribute, StringMap} from './metadata';
 import {SqlLoader, SqlSearchLoader, SqlSearchWriter, SqlWriter} from './services';
-export {SqlLoader as SqlLoadRepository};
+// export {SqlLoader as SqlLoadRepository};
 export {SqlLoader as SqlViewRepository};
 export {SqlWriter as SqlGenericRepository};
 export {SqlWriter as Repository};
