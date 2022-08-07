@@ -141,7 +141,7 @@ export class SqlLoadRepository<T, K1, K2> {
   }
   load(id1: K1, id2: K2, ctx?: any): Promise<T|null> {
     return this.query<T>(`select * from ${this.table} where ${this.id1Col} = ${this.param(1)} and ${this.id2Col} = ${this.param(2)}`, [id1, id2], this.map, undefined, ctx).then(objs => {
-      if (!objs || objs.length == 0) {
+      if (!objs || objs.length === 0) {
         return null;
       } else {
         const fn = this.fromDB;
