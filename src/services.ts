@@ -83,6 +83,34 @@ export class SqlLoader<T, ID> {
   }
 }
 // tslint:disable-next-line:max-classes-per-file
+export class QueryRepository<T, ID> {
+  constructor(public db: DB, public table: string, public attrs: Attributes, public sort?: string, id?: string) {
+    this.id = (id && id.length > 0 ? id : 'id');
+    this.query = this.query.bind(this);
+    const m = metadata(attrs);
+    this.map = m.map;
+    this.bools = m.bools;
+  }
+  id: string;
+  map?: StringMap;
+  bools?: Attribute[];
+  query(ids: ID[]): Promise<T[]> {
+    if (!ids || ids.length === 0) {
+      return Promise.resolve([]);
+    }
+    const ps: string[] = [];
+    const length = ids.length;
+    for (let i = 1; i <= length; i++) {
+      ps.push(this.db.param(i));
+    }
+    let sql = `select * from ${this.table} where ${this.id} in (${ps.join(',')})`;
+    if (this.sort && this.sort.length > 0) {
+      sql = sql + ' order by ' + this.sort;
+    }
+    return this.db.query<T>(sql, ids, this.map, this.bools);
+  }
+}
+// tslint:disable-next-line:max-classes-per-file
 export class SqlLoadRepository<T, K1, K2> {
   map?: StringMap;
   attributes: Attributes;
