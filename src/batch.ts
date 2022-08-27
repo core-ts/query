@@ -115,7 +115,7 @@ export class SqlBatchUpdater<T> {
 // tslint:disable-next-line:max-classes-per-file
 export class StreamInserter<T> {
   list: T[] = [];
-  size: number = 0;
+  size = 0;
   version?: string;
   map?: (v: T) => T;
   constructor(public exec: ((sql: string, args?: any[]) => Promise<number>), public table: string, public attributes: Attributes, public param: (i: number) => string, size?: number, toDB?: (v: T) => T) {
@@ -167,7 +167,7 @@ export class StreamInserter<T> {
 // tslint:disable-next-line:max-classes-per-file
 export class StreamUpdater<T> {
   list: T[] = [];
-  size: number = 0;
+  size = 0;
   version?: string;
   map?: (v: T) => T;
   constructor(public execBatch: ((statements: Statement[]) => Promise<number>), public table: string, public attributes: Attributes, public param: (i: number) => string, size?: number, toDB?: (v: T) => T) {
