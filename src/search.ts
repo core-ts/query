@@ -26,7 +26,7 @@ export function buildFromQuery<T>(query: <K>(sql: string, args?: any[], m?: Stri
           return 0;
         } else {
           const r0 = r[0];
-          const keys = Object.keys(r0);
+          const keys = Object.keys(r0 as any);
           return (r0 as any)[keys[0]] as number;
         }
       });

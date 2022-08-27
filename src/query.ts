@@ -300,7 +300,7 @@ export function buildMatch(v: string, match: string): string|RegExp {
   }
 }
 export function isDateRange<T>(obj: T): boolean {
-  const keys: string[] = Object.keys(obj);
+  const keys: string[] = Object.keys(obj as any);
   for (const key of keys) {
     const v = (obj as any)[key];
     if (!(v instanceof Date)) {
@@ -310,7 +310,7 @@ export function isDateRange<T>(obj: T): boolean {
   return true;
 }
 export function isNumberRange<T>(obj: T): boolean {
-  const keys: string[] = Object.keys(obj);
+  const keys: string[] = Object.keys(obj as any);
   for (const key of keys) {
     const v = (obj as any)[key];
     if (typeof v !== 'number') {
