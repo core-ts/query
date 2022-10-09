@@ -1,6 +1,6 @@
 {
   "name": "query-core",
-  "version": "0.1.25",
+  "version": "0.1.27",
   "description": "query",
   "main": "./lib/index.js",
   "types": "./src/index.ts",
