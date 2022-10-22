@@ -3,7 +3,7 @@ import { Attributes, Statement } from './metadata';
 
 export class SqlInserter<T> {
   version?: string;
-  constructor(public exec: (sql: string, args?: any[]) => Promise<number>, public table: string, public attributes: Attributes, public param: (i: number) => string, public map?: (v: T) => T) {
+  constructor(public exec: (sql: string, args?: any[]) => Promise<number>, public table: string, public attributes: Attributes, public param: (i: number) => string, public oneIfSuccess?: boolean, public map?: (v: T) => T) {
     this.write = this.write.bind(this);
     const x = version(attributes);
     if (x) {
@@ -20,7 +20,11 @@ export class SqlInserter<T> {
     }
     const stmt = buildToInsert(obj2, this.table, this.attributes, this.param, this.version);
     if (stmt) {
-      return this.exec(stmt.query, stmt.params);
+      if (this.oneIfSuccess) {
+        return this.exec(stmt.query, stmt.params).then(ct => ct > 0 ? 1 : 0);
+      } else {
+        return this.exec(stmt.query, stmt.params);
+      }
     } else {
       return Promise.resolve(0);
     }
@@ -29,7 +33,7 @@ export class SqlInserter<T> {
 // tslint:disable-next-line:max-classes-per-file
 export class SqlUpdater<T> {
   version?: string;
-  constructor(public exec: (sql: string, args?: any[]) => Promise<number>, public table: string, public attributes: Attributes, public param: (i: number) => string, public map?: (v: T) => T) {
+  constructor(public exec: (sql: string, args?: any[]) => Promise<number>, public table: string, public attributes: Attributes, public param: (i: number) => string, public oneIfSuccess?: boolean, public map?: (v: T) => T) {
     this.write = this.write.bind(this);
     const x = version(attributes);
     if (x) {
@@ -46,7 +50,11 @@ export class SqlUpdater<T> {
     }
     const stmt = buildToUpdate(obj2, this.table, this.attributes, this.param, this.version);
     if (stmt) {
-      return this.exec(stmt.query, stmt.params);
+      if (this.oneIfSuccess) {
+        return this.exec(stmt.query, stmt.params).then(ct => ct > 0 ? 1 : 0);
+      } else {
+        return this.exec(stmt.query, stmt.params);
+      }
     } else {
       return Promise.resolve(0);
     }
@@ -55,7 +63,7 @@ export class SqlUpdater<T> {
 // tslint:disable-next-line:max-classes-per-file
 export class SqlBatchInserter<T> {
   version?: string;
-  constructor(public exec: (sql: string, args?: any[]) => Promise<number>, public table: string, public attributes: Attributes, public param: ((i: number) => string) | boolean, public map?: (v: T) => T) {
+  constructor(public exec: (sql: string, args?: any[]) => Promise<number>, public table: string, public attributes: Attributes, public param: ((i: number) => string) | boolean, public oneIfSuccess?: boolean, public map?: (v: T) => T) {
     this.write = this.write.bind(this);
     const x = version(attributes);
     if (x) {
@@ -76,7 +84,11 @@ export class SqlBatchInserter<T> {
     }
     const stmt = buildToInsertBatch(list, this.table, this.attributes, this.param, this.version);
     if (stmt) {
-      return this.exec(stmt.query, stmt.params);
+      if (this.oneIfSuccess) {
+        return this.exec(stmt.query, stmt.params).then(ct => objs.length);
+      } else {
+        return this.exec(stmt.query, stmt.params);
+      }
     } else {
       return Promise.resolve(0);
     }
@@ -85,7 +97,7 @@ export class SqlBatchInserter<T> {
 // tslint:disable-next-line:max-classes-per-file
 export class SqlBatchUpdater<T> {
   version?: string;
-  constructor(public execBatch: (statements: Statement[]) => Promise<number>, public table: string, public attributes: Attributes, public param: (i: number) => string, protected notSkipInvalid?: boolean, public map?: (v: T) => T) {
+  constructor(public execBatch: (statements: Statement[]) => Promise<number>, public table: string, public attributes: Attributes, public param: (i: number) => string, public oneIfSuccess?: boolean, protected notSkipInvalid?: boolean, public map?: (v: T) => T) {
     this.write = this.write.bind(this);
     const x = version(attributes);
     if (x) {
@@ -106,7 +118,11 @@ export class SqlBatchUpdater<T> {
     }
     const stmts = buildToUpdateBatch(list, this.table, this.attributes, this.param, this.notSkipInvalid);
     if (stmts && stmts.length > 0) {
-      return this.execBatch(stmts);
+      if (this.oneIfSuccess) {
+        return this.execBatch(stmts).then(ct => stmts.length);
+      } else {
+        return this.execBatch(stmts);
+      }
     } else {
       return Promise.resolve(0);
     }
