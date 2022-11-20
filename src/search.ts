@@ -32,7 +32,12 @@ export function buildFromQuery<T>(query: <K>(sql: string, args?: any[], m?: Stri
       });
       return Promise.all([resultPromise, countPromise]).then(r => {
         const [list, total] = r;
-        return {list, total};
+        if (typeof total === 'string' && !isNaN(total)) {
+          const t = parseInt(total, 10);
+          return {list, total: t};
+        } else {
+          return {list, total};
+        }
       });
     }
   }

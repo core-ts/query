@@ -1,6 +1,7 @@
 import {Checker} from './health';
 export {Checker as SqlChecker};
 
+import {resource} from './build';
 import {Attribute, StringMap} from './metadata';
 import {SqlLoader, SqlSearchLoader, SqlSearchWriter, SqlWriter} from './services';
 // export {SqlLoader as SqlLoadRepository};
@@ -50,10 +51,7 @@ export interface Config {
   min?: number | undefined;
   idleTimeoutMillis?: number | undefined;
 }
-// tslint:disable-next-line:class-name
-export class resource {
-  static string?: boolean;
-}
+
 // tslint:disable-next-line:max-classes-per-file
 export class Loader<T> {
   map?: StringMap;

@@ -1,5 +1,10 @@
 import {Attribute, Attributes, Statement, StringMap} from './metadata';
 
+// tslint:disable-next-line:class-name
+export class resource {
+  static string?: boolean;
+  static ignoreDatetime?: boolean;
+}
 export function params(length: number, p: (i: number) => string, from?: number): string[] {
   if (from === undefined || from == null) {
     from = 0;
@@ -155,9 +160,13 @@ export function buildToInsert<T>(obj: T, table: string, attrs: Attributes, build
               }
             }
           } else {
-            const p = buildParam(i++);
-            values.push(p);
-            args.push(v);
+            if (resource.ignoreDatetime && typeof v === 'string' && attr.type === 'datetime') {
+              values.push(`'${v}'`);
+            } else {
+              const p = buildParam(i++);
+              values.push(p);
+              args.push(v);
+            }
           }
         }
       }
@@ -240,9 +249,13 @@ export function buildToInsertBatch<T>(objs: T[], table: string, attrs: Attribute
               }
             }
           } else {
-            const p = buildParam(i++);
-            values.push(p);
-            args.push(v);
+            if (resource.ignoreDatetime && typeof v === 'string' && attr.type === 'datetime') {
+              values.push(`'${v}'`);
+            } else {
+              const p = buildParam(i++);
+              values.push(p);
+              args.push(v);
+            }
           }
         }
       }
@@ -380,8 +393,12 @@ export function buildToUpdate<T>(obj: T, table: string, attrs: Attributes, build
               }
             }
           } else {
-            x = buildParam(i++);
-            args.push(v);
+            if (resource.ignoreDatetime && typeof v === 'string' && attr.type === 'datetime') {
+              x = `'${v}'`;
+            } else {
+              x = buildParam(i++);
+              args.push(v);
+            }
           }
           colSet.push(`${field}=${x}`);
         }
