@@ -207,12 +207,12 @@ export class GenericRepository<T, K1, K2> extends SqlLoadRepository<T, K1, K2> {
     if (x) {
       this.version = x.name;
     }
-    this.insert = this.insert.bind(this);
+    this.create = this.create.bind(this);
     this.update = this.update.bind(this);
     this.patch = this.patch.bind(this);
     this.delete = this.delete.bind(this);
   }
-  insert(obj: T, ctx?: any): Promise<number> {
+  create(obj: T, ctx?: any): Promise<number> {
     let obj2 = obj;
     if (this.toDB) {
       obj2 = this.toDB(obj);
@@ -588,12 +588,12 @@ export class SqlWriter<T, ID> extends SqlLoader<T, ID> {
     if (x) {
       this.version = x.name;
     }
-    this.insert = this.insert.bind(this);
+    this.create = this.create.bind(this);
     this.update = this.update.bind(this);
     this.patch = this.patch.bind(this);
     this.delete = this.delete.bind(this);
   }
-  insert(obj: T, ctx?: any): Promise<number> {
+  create(obj: T, ctx?: any): Promise<number> {
     let obj2 = obj;
     if (this.toDB) {
       obj2 = this.toDB(obj);
