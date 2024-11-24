@@ -4,13 +4,24 @@ export interface SearchResult<T> {
   list: T[];
   total?: number;
 }
-export function buildFromQuery<T>(query: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[]) => Promise<K[]>, sql: string, params?: any[], limit?: number, offset?: number, mp?: StringMap, bools?: Attribute[], provider?: string, totalCol?: string): Promise<SearchResult<T>> {
+export function getOffset(limit: number, page: number, ifirstPageSize?: number): number {
+  if (ifirstPageSize && ifirstPageSize > 0) {
+    const offset = limit * (page - 2) + ifirstPageSize;
+    return offset < 0 ? 0 : offset;
+  } else {
+    const offset = limit * (page - 1);
+    return offset < 0 ? 0 : offset;
+  }
+}
+export function buildFromQuery<T>(query: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[]) => Promise<K[]>, sql: string, params?: any[], limit?: number, page?: number, mp?: StringMap, bools?: Attribute[], provider?: string, totalCol?: string): Promise<SearchResult<T>> {
   if (!limit || limit <= 0) {
     return query<T>(sql, params, mp, bools).then(list => {
       const total = (list ? list.length : undefined);
       return {list, total};
     });
   } else {
+    const ipage = (!page || page <= 0 ? 1 : page)
+    const offset = getOffset(limit, ipage)
     if (provider === oracle) {
       if (!totalCol || totalCol.length === 0) {
         totalCol = 'total';
@@ -95,7 +106,7 @@ export function buildPagingQueryForOracle(sql: string, limit: number, offset?: n
     i = sql.indexOf(S);
   }
   if (i >= 0) {
-    return `${sql.substr(0, l)} count(*) over() as ${total}, ${sql.substr(l)} offset ${offset} rows fetch next ${limit} rows only`;
+    return `${sql.substring(0, l)} count(*) over() as ${total}, ${sql.substring(l)} offset ${offset} rows fetch next ${limit} rows only`;
   } else {
     return `${sql} offset ${offset} rows fetch next ${limit} rows only`;
   }

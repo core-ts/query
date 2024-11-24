@@ -15,7 +15,7 @@ export function buildSort(sort?: string, map?: Attributes|StringMap): string {
         let field = st;
         const tp = st.charAt(0);
         if (tp === '-' || tp === '+') {
-          field = st.substr(1);
+          field = st.substring(1);
         }
         const sortType = (tp === '-' ? ' desc' : '');
         sort2.push(getField(field.trim(), map) + sortType);
