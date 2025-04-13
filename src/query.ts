@@ -207,7 +207,6 @@ export function buildQuery<S>(
     }
   }
   const idField = getId(attrs)
-  const c = []
   if (idField && excluding && excluding.length > 0) {
     const l = excluding.length
     const ps: string[] = []
@@ -229,17 +228,17 @@ export function buildQuery<S>(
     for (const field of qkeys) {
       const attr = attrs[field]
       if (attr.q && (attr.type === undefined || attr.type === "string") && !ex.includes(field)) {
+        const column = attr.column ? attr.column : field
         if (attr.match === "equal") {
-          qfilters.push(`${field} = ${param(i++)}`)
+          qfilters.push(`${column} = ${param(i++)}`)
           args.push(q)
         } else if (attr.match === "prefix") {
-          qfilters.push(`${field} ${like} ${param(i++)}`)
+          qfilters.push(`${column} ${like} ${param(i++)}`)
           args.push(q + "%")
         } else {
-          qfilters.push(`${field} ${like} ${param(i++)}`)
+          qfilters.push(`${column} ${like} ${param(i++)}`)
           args.push("%" + q + "%")
         }
-        c.push(buildQ(field, q, attr.match))
       }
     }
     if (qfilters.length > 0) {
