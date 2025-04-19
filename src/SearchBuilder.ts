@@ -76,16 +76,16 @@ export class SearchBuilder<T, S> {
     }
     this.total = total && total.length > 0 ? total : "total"
   }
-  search(s: S, limit?: number, offset?: number | string, fields?: string[]): Promise<SearchResult<T>> {
+  search(filter: S, limit: number, offset?: number | string, fields?: string[]): Promise<SearchResult<T>> {
     let skip = 0
     if (typeof offset === "number" && offset > 0) {
       skip = offset
     }
     const st = this.sort ? this.sort : "sort"
-    const sn = (s as any)[st] as string
-    delete (s as any)[st]
+    const sn = (filter as any)[st] as string
+    delete (filter as any)[st]
     const x = this.provider === postgres ? "ilike" : this.param
-    const q2 = this.buildQuery(s, x, sn, this.buildSort, this.attributes, this.table, fields, this.q, this.excluding)
+    const q2 = this.buildQuery(filter, x, sn, this.buildSort, this.attributes, this.table, fields, this.q, this.excluding)
     if (!q2) {
       throw new Error("Cannot build query")
     }

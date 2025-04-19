@@ -269,7 +269,7 @@ export class GenericRepository<T, K1, K2> extends SqlLoadRepository<T, K1, K2> {
 // tslint:disable-next-line:max-classes-per-file
 export class SqlSearchLoader<T, ID, S extends Filter> extends SqlLoader<T, ID> {
   constructor(
-    protected find: (s: S, limit?: number, offset?: number | string, fields?: string[]) => Promise<SearchResult<T>>,
+    protected find: (s: S, limit: number, offset?: number | string, fields?: string[]) => Promise<SearchResult<T>>,
     query: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any) => Promise<K[]>,
     table: string,
     attrs: Attributes | string[],
@@ -279,7 +279,7 @@ export class SqlSearchLoader<T, ID, S extends Filter> extends SqlLoader<T, ID> {
     super(query, table, attrs, param, fromDB)
     this.search = this.search.bind(this)
   }
-  search(s: S, limit?: number, offset?: number | string, fields?: string[]): Promise<SearchResult<T>> {
+  search(s: S, limit: number, offset?: number | string, fields?: string[]): Promise<SearchResult<T>> {
     return this.find(s, limit, offset, fields)
   }
 }
@@ -688,7 +688,7 @@ export class SqlWriter<T, ID> extends SqlLoader<T, ID> {
 // tslint:disable-next-line:max-classes-per-file
 export class SqlSearchWriter<T, ID, S extends Filter> extends SqlWriter<T, ID> {
   constructor(
-    protected find: (s: S, limit?: number, offset?: number | string, fields?: string[]) => Promise<SearchResult<T>>,
+    protected find: (s: S, limit: number, offset?: number | string, fields?: string[]) => Promise<SearchResult<T>>,
     manager: Manager,
     table: string,
     attrs: Attributes,
@@ -698,7 +698,7 @@ export class SqlSearchWriter<T, ID, S extends Filter> extends SqlWriter<T, ID> {
     super(manager, table, attrs, toDB, fromDB)
     this.search = this.search.bind(this)
   }
-  search(s: S, limit?: number, offset?: number | string, fields?: string[]): Promise<SearchResult<T>> {
+  search(s: S, limit: number, offset?: number | string, fields?: string[]): Promise<SearchResult<T>> {
     return this.find(s, limit, offset, fields)
   }
 }
