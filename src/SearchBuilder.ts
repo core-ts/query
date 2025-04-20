@@ -76,10 +76,10 @@ export class SearchBuilder<T, S> {
     }
     this.total = total && total.length > 0 ? total : "total"
   }
-  search(filter: S, limit: number, offset?: number | string, fields?: string[]): Promise<SearchResult<T>> {
-    let skip = 0
-    if (typeof offset === "number" && offset > 0) {
-      skip = offset
+  search(filter: S, limit: number, page?: number | string, fields?: string[]): Promise<SearchResult<T>> {
+    let ipage = 0
+    if (typeof page === "number" && page > 0) {
+      ipage = page
     }
     const st = this.sort ? this.sort : "sort"
     const sn = (filter as any)[st] as string
@@ -91,7 +91,7 @@ export class SearchBuilder<T, S> {
     }
     const fn = this.fromDB
     if (fn) {
-      return buildFromQuery<T>(this.query, q2.query, q2.params, limit, skip, this.map, this.bools, this.provider, this.total).then((r) => {
+      return buildFromQuery<T>(this.query, q2.query, q2.params, limit, ipage, this.map, this.bools, this.provider, this.total).then((r) => {
         if (r.list && r.list.length > 0) {
           r.list = r.list.map((o) => fn(o))
           return r
@@ -100,7 +100,7 @@ export class SearchBuilder<T, S> {
         }
       })
     } else {
-      return buildFromQuery(this.query, q2.query, q2.params, limit, skip, this.map, this.bools, this.provider, this.total)
+      return buildFromQuery(this.query, q2.query, q2.params, limit, ipage, this.map, this.bools, this.provider, this.total)
     }
   }
 }
