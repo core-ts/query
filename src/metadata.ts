@@ -53,35 +53,17 @@ export interface Model {
 }
 export interface Attribute {
   name?: string
-  field?: string
   column?: string
   type?: DataType
-  format?: FormatType
-  required?: boolean
   match?: MatchType
   default?: string | number | Date | boolean
   key?: boolean
-  unique?: boolean
-  enum?: string[] | number[]
   q?: boolean
   noinsert?: boolean
   noupdate?: boolean
   nopatch?: boolean
   version?: boolean
-  length?: number
-  min?: number
-  max?: number
-  gt?: number
-  lt?: number
-  precision?: number
-  scale?: number
-  exp?: RegExp | string
-  code?: string
-  noformat?: boolean
   ignored?: boolean
-  jsonField?: string
-  link?: string
-  typeof?: Attributes
   true?: string | number
   false?: string | number
 }

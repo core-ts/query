@@ -1,6 +1,6 @@
 import { attributes, buildToDelete, buildToInsert, buildToUpdate, exist, metadata, select, version } from "./build"
 import { Attribute, Attributes, Statement, StringMap } from "./metadata"
-import { SearchResult } from "./search"
+// import { SearchResult } from "./search"
 
 export interface Filter {
   fields?: string[]
@@ -205,7 +205,7 @@ export class SqlLoadRepository<T, K1, K2> {
 export class GenericRepository<T, K1, K2> extends SqlLoadRepository<T, K1, K2> {
   version?: string
   exec: (sql: string, args?: any[], ctx?: any) => Promise<number>
-  execBatch: (statements: Statement[], firstSuccess?: boolean, ctx?: any) => Promise<number>
+  // execBatch: (statements: Statement[], firstSuccess?: boolean, ctx?: any) => Promise<number>
   constructor(
     manager: Manager,
     table: string,
@@ -220,7 +220,7 @@ export class GenericRepository<T, K1, K2> extends SqlLoadRepository<T, K1, K2> {
     super(manager.query, table, attrs, manager.param, id1Field, id2Field, fromDB, id1Col, id2Col)
     const x = version(attrs)
     this.exec = manager.exec
-    this.execBatch = manager.execBatch
+    // this.execBatch = manager.execBatch
     if (x) {
       this.version = x.name
     }
@@ -266,6 +266,7 @@ export class GenericRepository<T, K1, K2> extends SqlLoadRepository<T, K1, K2> {
     return this.exec(`delete from ${this.table} where ${this.id1Col} = ${this.param(1)} and ${this.id2Col} = ${this.param(2)}`, [id1, id2], ctx)
   }
 }
+/*
 // tslint:disable-next-line:max-classes-per-file
 export class SqlSearchLoader<T, ID, S extends Filter> extends SqlLoader<T, ID> {
   constructor(
@@ -283,11 +284,12 @@ export class SqlSearchLoader<T, ID, S extends Filter> extends SqlLoader<T, ID> {
     return this.find(s, limit, offset, fields)
   }
 }
+*/
 export interface Manager {
   driver: string
   param(i: number): string
   exec(sql: string, args?: any[], ctx?: any): Promise<number>
-  execBatch(statements: Statement[], firstSuccess?: boolean, ctx?: any): Promise<number>
+  // execBatch(statements: Statement[], firstSuccess?: boolean, ctx?: any): Promise<number>
   query<T>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any): Promise<T[]>
 }
 export type DB = Manager
@@ -629,12 +631,12 @@ const getDurationInMilliseconds = (start: [number, number] | undefined) => {
 export class SqlWriter<T, ID> extends SqlLoader<T, ID> {
   version?: string
   exec: (sql: string, args?: any[], ctx?: any) => Promise<number>
-  execBatch: (statements: Statement[], firstSuccess?: boolean, ctx?: any) => Promise<number>
+  // execBatch: (statements: Statement[], firstSuccess?: boolean, ctx?: any) => Promise<number>
   constructor(manager: Manager, table: string, attrs: Attributes, public toDB?: (v: T) => T, fromDB?: (v: T) => T) {
     super(manager.query, table, attrs, manager.param, fromDB)
     const x = version(attrs)
     this.exec = manager.exec
-    this.execBatch = manager.execBatch
+    // this.execBatch = manager.execBatch
     if (x) {
       this.version = x.name
     }
@@ -685,6 +687,7 @@ export class SqlWriter<T, ID> extends SqlLoader<T, ID> {
     }
   }
 }
+/*
 // tslint:disable-next-line:max-classes-per-file
 export class SqlSearchWriter<T, ID, S extends Filter> extends SqlWriter<T, ID> {
   constructor(
@@ -702,3 +705,4 @@ export class SqlSearchWriter<T, ID, S extends Filter> extends SqlWriter<T, ID> {
     return this.find(s, limit, offset, fields)
   }
 }
+*/
