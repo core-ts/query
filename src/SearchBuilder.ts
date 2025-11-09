@@ -10,6 +10,7 @@ export const sqlite = "sqlite"
 export class SearchBuilder<T, S> {
   map?: StringMap
   bools?: Attribute[]
+  protected deleteSort?: boolean
   buildQuery: (
     s: S,
     bparam: LikeType | ((i: number) => string),
@@ -56,6 +57,7 @@ export class SearchBuilder<T, S> {
       this.map = meta.map
       this.bools = meta.bools
     }
+    this.deleteSort = buildQ ? true: undefined
     this.buildQuery = buildQ ? buildQ : buildQuery
     this.buildSort = buildSort ? buildSort : bs
     this.q = q && q.length > 0 ? q : "q"
@@ -83,7 +85,9 @@ export class SearchBuilder<T, S> {
     }
     const st = this.sort ? this.sort : "sort"
     const sn = (filter as any)[st] as string
-    delete (filter as any)[st]
+    if (this.deleteSort) {
+      delete (filter as any)[st]  
+    }
     const x = this.provider === postgres ? "ilike" : this.param
     const q2 = this.buildQuery(filter, x, sn, this.buildSort, this.attributes, this.table, fields, this.q, this.excluding)
     if (!q2) {

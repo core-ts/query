@@ -9,6 +9,9 @@ export { SqlWriter as Repository, SqlWriter as SqlGenericRepository, SqlLoader a
 
 export { SqlWriter as SqlGenericService, SqlLoader as SqlLoadService, SqlLoader as SqlViewService }
 
+import { SearchBuilder } from "./SearchBuilder"
+export { SearchBuilder as SearchRepository}
+
 export * from "./batch"
 export * from "./build"
 export * from "./client"
