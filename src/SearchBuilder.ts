@@ -57,7 +57,7 @@ export class SearchBuilder<T, S> {
       this.map = meta.map
       this.bools = meta.bools
     }
-    this.deleteSort = buildQ ? true: undefined
+    this.deleteSort = buildQ ? undefined : true
     this.buildQuery = buildQ ? buildQ : buildQuery
     this.buildSort = buildSort ? buildSort : bs
     this.q = q && q.length > 0 ? q : "q"
