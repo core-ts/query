@@ -54,7 +54,7 @@ export function buildDollarParam(i: number): string {
 }
 export function buildQuery<S>(
   filter: S,
-  bparam: LikeType | ((i: number) => string),
+  param: ((i: number) => string),
   sort?: string,
   buildSort3?: (sort?: string, map?: Attributes | StringMap) => string,
   attrs?: Attributes,
@@ -62,24 +62,14 @@ export function buildQuery<S>(
   fields?: string[],
   sq?: string,
   strExcluding?: string,
+  likeType?: LikeType
 ): Statement | undefined {
   if (!table || !attrs) {
     return undefined
   }
   const s: any = filter
-  let like = "like"
-  let param: (i: number) => string
-  if (typeof bparam === "string") {
-    if (bparam === "ilike") {
-      like = bparam
-    }
-    param = buildDollarParam
-  } else {
-    param = bparam
-  }
-  if (!like) {
-    like = "like"
-  }
+  let like = likeType ? likeType : "like"
+  // let param: (i: number) => string
   const filters: string[] = []
   let q: string | undefined
   let excluding: string[] | number[] | undefined

@@ -26,11 +26,11 @@ export class SqlLoader<T, ID> {
   attributes: Attributes
   bools?: Attribute[]
   constructor(
-    public query: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any) => Promise<K[]>,
-    public table: string,
+    protected query: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any) => Promise<K[]>,
+    protected table: string,
     attrs: Attributes | string[],
-    public param: (i: number) => string,
-    public fromDB?: (v: T) => T,
+    protected param: (i: number) => string,
+    protected fromDB?: (v: T) => T,
   ) {
     if (Array.isArray(attrs)) {
       this.primaryKeys = attributes(attrs)
@@ -112,6 +112,7 @@ export class QueryRepository<T, ID> {
     return this.db.query<T>(sql, ids, this.map, this.bools)
   }
 }
+/*
 // tslint:disable-next-line:max-classes-per-file
 export class SqlLoadRepository<T, K1, K2> {
   map?: StringMap
@@ -266,6 +267,7 @@ export class GenericRepository<T, K1, K2> extends SqlLoadRepository<T, K1, K2> {
     return this.exec(`delete from ${this.table} where ${this.id1Col} = ${this.param(1)} and ${this.id2Col} = ${this.param(2)}`, [id1, id2], ctx)
   }
 }
+*/
 /*
 // tslint:disable-next-line:max-classes-per-file
 export class SqlSearchLoader<T, ID, S extends Filter> extends SqlLoader<T, ID> {
@@ -628,14 +630,12 @@ const getDurationInMilliseconds = (start: [number, number] | undefined) => {
 };
 */
 // tslint:disable-next-line:max-classes-per-file
-export class SqlWriter<T, ID> extends SqlLoader<T, ID> {
-  version?: string
-  exec: (sql: string, args?: any[], ctx?: any) => Promise<number>
+export class SqlWriter<T> {
+  protected version?: string
   // execBatch: (statements: Statement[], firstSuccess?: boolean, ctx?: any) => Promise<number>
-  constructor(manager: Manager, table: string, attrs: Attributes, public toDB?: (v: T) => T, fromDB?: (v: T) => T) {
-    super(manager.query, table, attrs, manager.param, fromDB)
-    const x = version(attrs)
-    this.exec = manager.exec
+  constructor(protected exec: (sql: string, args?: any[], ctx?: any) => Promise<number>, protected param: (i: number) => string, protected table: string, protected attributes: Attributes, public toDB?: (v: T) => T) {
+    // super(manager.query, table, attrs, manager.param, fromDB)
+    const x = version(attributes)
     // this.execBatch = manager.execBatch
     if (x) {
       this.version = x.name
@@ -643,7 +643,7 @@ export class SqlWriter<T, ID> extends SqlLoader<T, ID> {
     this.create = this.create.bind(this)
     this.update = this.update.bind(this)
     this.patch = this.patch.bind(this)
-    this.delete = this.delete.bind(this)
+    // this.delete = this.delete.bind(this)
   }
   create(obj: T, ctx?: any): Promise<number> {
     let obj2 = obj
@@ -677,6 +677,70 @@ export class SqlWriter<T, ID> extends SqlLoader<T, ID> {
   }
   patch(obj: Partial<T>, ctx?: any): Promise<number> {
     return this.update(obj as any, ctx)
+  }
+  /*
+  delete(id: ID, ctx?: any): Promise<number> {
+    const stmt = buildToDelete<ID>(id, this.table, this.primaryKeys, this.param)
+    if (stmt) {
+      return this.exec(stmt.query, stmt.params, ctx)
+    } else {
+      return Promise.resolve(0)
+    }
+  }
+    */
+}
+export class CRUDRepository<T, ID> extends SqlWriter<T> {
+  protected primaryKeys: Attribute[]
+  protected map?: StringMap
+  // attributes: Attributes;
+  protected bools?: Attribute[]
+  protected query: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any) => Promise<K[]>
+  constructor(manager: Manager, table: string, attributes: Attributes, toDB?: (v: T) => T, protected fromDB?: (v: T) => T) {
+    super(manager.exec, manager.param, table, attributes, toDB)
+    this.query = manager.query
+    const m = metadata(attributes)
+    this.primaryKeys = m.keys
+    this.map = m.map
+    this.bools = m.bools
+    this.metadata = this.metadata.bind(this)
+    this.all = this.all.bind(this)
+    this.load = this.load.bind(this)
+    this.exist = this.exist.bind(this)
+    this.delete = this.delete.bind(this)
+  }
+  metadata(): Attributes {
+    return this.attributes
+  }
+  all(): Promise<T[]> {
+    const sql = `select * from ${this.table}`
+    return this.query(sql, [], this.map)
+  }
+  load(id: ID, ctx?: any): Promise<T | null> {
+    const stmt = select<ID>(id, this.table, this.primaryKeys, this.param)
+    if (!stmt) {
+      throw new Error("cannot build query by id")
+    }
+    const fn = this.fromDB
+    if (fn) {
+      return this.query<T>(stmt.query, stmt.params, this.map, ctx).then((res) => {
+        if (!res || res.length === 0) {
+          return null
+        } else {
+          const obj = res[0]
+          return fn(obj)
+        }
+      })
+    } else {
+      return this.query<T>(stmt.query, stmt.params, this.map).then((res) => (!res || res.length === 0 ? null : res[0]))
+    }
+  }
+  exist(id: ID, ctx?: any): Promise<boolean> {
+    const field = this.primaryKeys[0].column ? this.primaryKeys[0].column : this.primaryKeys[0].name
+    const stmt = exist<ID>(id, this.table, this.primaryKeys, this.param, field)
+    if (!stmt) {
+      throw new Error("cannot build query by id")
+    }
+    return this.query(stmt.query, stmt.params, this.map, undefined, ctx).then((res) => (!res || res.length === 0 ? false : true))
   }
   delete(id: ID, ctx?: any): Promise<number> {
     const stmt = buildToDelete<ID>(id, this.table, this.primaryKeys, this.param)

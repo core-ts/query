@@ -3,14 +3,14 @@ export { Checker as SqlChecker }
 
 import { resource } from "./build"
 import { Attribute, StringMap } from "./metadata"
-import { SqlLoader, SqlWriter } from "./services"
+import { SqlLoader, SqlWriter, CRUDRepository } from "./services"
 // export {SqlLoader as SqlLoadRepository};
-export { SqlWriter as Repository, SqlWriter as SqlGenericRepository, SqlLoader as SqlViewRepository }
+export { CRUDRepository as GenericRepository, CRUDRepository as SqlGenericRepository, SqlLoader as SqlViewRepository }
 
 export { SqlWriter as SqlGenericService, SqlLoader as SqlLoadService, SqlLoader as SqlViewService }
 
-import { SearchBuilder } from "./SearchBuilder"
-export { SearchBuilder as SearchRepository}
+import { SearchBuilder, SqlRepository } from "./SearchBuilder"
+export { SearchBuilder as SearchRepository, SqlRepository as Repository }
 
 export * from "./batch"
 export * from "./build"
