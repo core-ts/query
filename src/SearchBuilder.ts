@@ -1,4 +1,4 @@
-import { Manager } from "./services"
+import { DB, Manager } from "./services"
 import { buildToDelete, buildToInsert, buildToUpdate, exist, metadata, param, select, version } from "./build"
 import { Attribute, Attributes, Statement, StringMap } from "./metadata"
 import { buildSort as bs, buildDollarParam, buildMsSQLParam, buildOracleParam, buildQuery, LikeType } from "./query"
@@ -119,10 +119,9 @@ export class SqlSearchWriter<T, S> extends SearchBuilder<T, S> {
   protected version?: string
   protected exec: (sql: string, args?: any[], ctx?: any) => Promise<number>
   constructor(
-    manager: Manager,
+    db: DB,
     table: string,
     protected attributes: Attributes,
-    provider?: string,
     buildQ?: (
       s: S,
       param: (i: number) => string,
@@ -144,8 +143,8 @@ export class SqlSearchWriter<T, S> extends SearchBuilder<T, S> {
     buildParam?: (i: number) => string,
     total?: string,
   ) {
-    super(manager.query, table, attributes, provider, buildQ, fromDB, sort, q, excluding, buildSort, buildParam, total)
-    this.exec = manager.exec
+    super(db.query, table, attributes, db.driver, buildQ, fromDB, sort, q, excluding, buildSort, buildParam, total)
+    this.exec = db.exec
     const x = version(attributes)
     if (x) {
       this.version = x.name
@@ -191,10 +190,9 @@ export class SqlSearchWriter<T, S> extends SearchBuilder<T, S> {
 // tslint:disable-next-line:max-classes-per-file
 export class SqlRepository<T, ID, S> extends SqlSearchWriter<T, S> {
   constructor(
-    manager: Manager,
+    db: DB,
     table: string,
     protected attributes: Attributes,
-    provider?: string,
     buildQ?: (
       s: S,
       param: (i: number) => string,
@@ -216,7 +214,7 @@ export class SqlRepository<T, ID, S> extends SqlSearchWriter<T, S> {
     buildParam?: (i: number) => string,
     total?: string,
   ) {
-    super(manager, table, attributes, provider, buildQ, toDB, fromDB, sort, q, excluding, buildSort, buildParam, total)
+    super(db, table, attributes, buildQ, toDB, fromDB, sort, q, excluding, buildSort, buildParam, total)
     this.metadata = this.metadata.bind(this)
     this.all = this.all.bind(this)
     this.load = this.load.bind(this)
