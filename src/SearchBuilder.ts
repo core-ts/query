@@ -34,9 +34,10 @@ export class SearchBuilder<T, S> {
     protected query: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any) => Promise<K[]>,
     protected table: string,
     protected attrs?: Attributes,
+    protected provider?: string,
     buildQ?: (
       s: S,
-      bparam: (i: number) => string,
+      param: (i: number) => string,
       sort?: string,
       buildSort3?: (sort?: string, map?: Attributes | StringMap) => string,
       attrs?: Attributes,
@@ -46,7 +47,6 @@ export class SearchBuilder<T, S> {
       strExcluding?: string,
       likeType?: LikeType
     ) => Statement | undefined,
-    protected provider?: string,
     protected fromDB?: (v: T) => T,
     protected sort?: string,
     q?: string,
@@ -122,6 +122,7 @@ export class SqlSearchWriter<T, S> extends SearchBuilder<T, S> {
     manager: Manager,
     table: string,
     protected attributes: Attributes,
+    provider?: string,
     buildQ?: (
       s: S,
       param: (i: number) => string,
@@ -134,7 +135,6 @@ export class SqlSearchWriter<T, S> extends SearchBuilder<T, S> {
       strExcluding?: string,
       likeType?: LikeType
     ) => Statement | undefined,
-    provider?: string,
     protected toDB?: (v: T) => T,
     fromDB?: (v: T) => T,
     sort?: string,
@@ -144,7 +144,7 @@ export class SqlSearchWriter<T, S> extends SearchBuilder<T, S> {
     buildParam?: (i: number) => string,
     total?: string,
   ) {
-    super(manager.query, table, attributes, buildQ, provider, fromDB, sort, q, excluding, buildSort, buildParam, total)
+    super(manager.query, table, attributes, provider, buildQ, fromDB, sort, q, excluding, buildSort, buildParam, total)
     this.exec = manager.exec
     const x = version(attributes)
     if (x) {
@@ -194,9 +194,10 @@ export class SqlRepository<T, ID, S> extends SqlSearchWriter<T, S> {
     manager: Manager,
     table: string,
     protected attributes: Attributes,
+    provider?: string,
     buildQ?: (
       s: S,
-      bparam: LikeType | ((i: number) => string),
+      param: (i: number) => string,
       sort?: string,
       buildSort3?: (sort?: string, map?: Attributes | StringMap) => string,
       attrs?: Attributes,
@@ -204,8 +205,8 @@ export class SqlRepository<T, ID, S> extends SqlSearchWriter<T, S> {
       fields?: string[],
       sq?: string,
       strExcluding?: string,
+      likeType?: LikeType
     ) => Statement | undefined,
-    provider?: string,
     protected toDB?: (v: T) => T,
     fromDB?: (v: T) => T,
     sort?: string,
@@ -215,7 +216,7 @@ export class SqlRepository<T, ID, S> extends SqlSearchWriter<T, S> {
     buildParam?: (i: number) => string,
     total?: string,
   ) {
-    super(manager, table, attributes, buildQ, provider, toDB, fromDB, sort, q, excluding, buildSort, buildParam, total)
+    super(manager, table, attributes, provider, buildQ, toDB, fromDB, sort, q, excluding, buildSort, buildParam, total)
     this.metadata = this.metadata.bind(this)
     this.all = this.all.bind(this)
     this.load = this.load.bind(this)
@@ -277,7 +278,7 @@ export class Query<T, ID, S> extends SearchBuilder<T, S> {
     attributes: Attributes,
     buildQ?: (
       s: S,
-      bparam: LikeType | ((i: number) => string),
+      param: (i: number) => string,
       sort?: string,
       buildSort3?: (sort?: string, map?: Attributes | StringMap) => string,
       attrs?: Attributes,
@@ -285,6 +286,7 @@ export class Query<T, ID, S> extends SearchBuilder<T, S> {
       fields?: string[],
       sq?: string,
       strExcluding?: string,
+      likeType?: LikeType
     ) => Statement | undefined,
     provider?: string,
     fromDB?: (v: T) => T,
@@ -295,7 +297,7 @@ export class Query<T, ID, S> extends SearchBuilder<T, S> {
     buildParam?: (i: number) => string,
     total?: string,
   ) {
-    super(query, table, attributes, buildQ, provider, fromDB, sort, q, excluding, buildSort, buildParam, total)
+    super(query, table, attributes, provider, buildQ, fromDB, sort, q, excluding, buildSort, buildParam, total)
     const m = metadata(attributes)
     this.primaryKeys = m.keys
     this.map = m.map

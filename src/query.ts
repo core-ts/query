@@ -106,31 +106,20 @@ export function buildQuery<S>(
             if (attr.q) {
               ex.push(key)
             }
-            if (attr.match === "equal") {
+            if (attr.operator === "=") {
               filters.push(`${field} = ${param(i++)}`)
               args.push(v)
-            } else if (attr.match === "prefix") {
-              filters.push(`${field} ${like} ${param(i++)}`)
-              args.push(v + "%")
-            } else {
+            } else if (attr.operator === "like") {
               filters.push(`${field} ${like} ${param(i++)}`)
               args.push("%" + v + "%")
+            } else {
+              filters.push(`${field} ${like} ${param(i++)}`)
+              args.push(v + "%")
             }
           }
-        } else if (v instanceof Date) {
-          if (attr.match === "max") {
-            filters.push(`${field} <= ${param(i++)}`)
-            args.push(v)
-          } else {
-            filters.push(`${field} >= ${param(i++)}`)
-            args.push(v)
-          }
-        } else if (typeof v === "number") {
-          if (attr.match === "max") {
-            filters.push(`${field} <= ${v}`)
-          } else {
-            filters.push(`${field} >= ${v}`)
-          }
+        } else if (typeof v === "number" || v instanceof Date) {
+          const operator = attr.operator ? attr.operator : ">="
+          filters.push(`${field} ${operator} ${param(i++)}`)
         } else if (attr.type === "ObjectId") {
           filters.push(`${field} = ${param(i++)}`)
           args.push(v)
@@ -219,15 +208,15 @@ export function buildQuery<S>(
       const attr = attrs[field]
       if (attr.q && (attr.type === undefined || attr.type === "string") && !ex.includes(field)) {
         const column = attr.column ? attr.column : field
-        if (attr.match === "equal") {
+        if (attr.operator === "=") {
           qfilters.push(`${column} = ${param(i++)}`)
           args.push(q)
-        } else if (attr.match === "prefix") {
-          qfilters.push(`${column} ${like} ${param(i++)}`)
-          args.push(q + "%")
-        } else {
+        } else if (attr.operator === "like") {
           qfilters.push(`${column} ${like} ${param(i++)}`)
           args.push("%" + q + "%")
+        } else {
+          qfilters.push(`${column} ${like} ${param(i++)}`)
+          args.push(q + "%")
         }
       }
     }
