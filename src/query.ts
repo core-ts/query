@@ -76,14 +76,14 @@ export function buildQuery<S>(
   const args: any[] = []
   if (sq && sq.length > 0) {
     q = s[sq]
-    delete s[sq]
+    //delete s[sq]
     if (q === "") {
       q = undefined
     }
   }
   if (strExcluding && strExcluding.length > 0) {
     excluding = s[strExcluding]
-    delete s[strExcluding]
+    //delete s[strExcluding]
     if (typeof excluding === "string") {
       excluding = (excluding as string).split(",")
     }

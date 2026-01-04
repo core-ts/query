@@ -12,7 +12,6 @@ export class SearchBuilder<T, S> {
   map?: StringMap
   bools?: Attribute[]
   primaryKeys: Attribute[]
-  protected deleteSort?: boolean
   buildQuery: (
     s: S,
     param: (i: number) => string,
@@ -64,7 +63,6 @@ export class SearchBuilder<T, S> {
     } else {
       this.primaryKeys = []
     }
-    this.deleteSort = buildQ ? undefined : true
     this.buildQuery = buildQ ? buildQ : buildQuery
     this.buildSort = buildSort ? buildSort : bs
     this.q = q && q.length > 0 ? q : "q"
@@ -92,9 +90,6 @@ export class SearchBuilder<T, S> {
     }
     const st = this.sort ? this.sort : "sort"
     const sn = (filter as any)[st] as string
-    if (this.deleteSort) {
-      delete (filter as any)[st]
-    }
     const likeType = this.provider === postgres ? "ilike" : "like"
     const q2 = this.buildQuery(filter, this.param, sn, this.buildSort, this.attrs, this.table, fields, this.q, this.excluding, likeType)
     if (!q2) {
