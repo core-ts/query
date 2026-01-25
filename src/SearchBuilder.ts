@@ -1,4 +1,4 @@
-import { DB, Manager } from "./services"
+import { DB } from "./services"
 import { buildToDelete, buildToInsert, buildToUpdate, exist, metadata, param, select, version } from "./build"
 import { Attribute, Attributes, Statement, StringMap } from "./metadata"
 import { buildSort as bs, buildDollarParam, buildMsSQLParam, buildOracleParam, buildQuery, LikeType } from "./query"
@@ -154,7 +154,7 @@ export class SqlSearchWriter<T, S> extends SearchBuilder<T, S> {
       obj2 = this.toDB(obj)
     }
     const stmt = buildToInsert(obj2, this.table, this.attributes, this.param, this.version)
-    if (stmt) {
+    if (stmt.query.length > 0) {
       return this.exec(stmt.query, stmt.params, ctx).catch((err) => {
         if (err && err.error === "duplicate") {
           return 0
@@ -172,7 +172,7 @@ export class SqlSearchWriter<T, S> extends SearchBuilder<T, S> {
       obj2 = this.toDB(obj)
     }
     const stmt = buildToUpdate(obj2, this.table, this.attributes, this.param, this.version)
-    if (stmt) {
+    if (stmt.query.length > 0) {
       return this.exec(stmt.query, stmt.params, ctx)
     } else {
       return Promise.resolve(0)

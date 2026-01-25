@@ -153,7 +153,7 @@ export class ProxyClient {
 
   insert<T>(table: string, attrs: Attributes, obj: T, buildParam: (i: number) => string, ver?: string): Promise<number> {
     const s = buildToInsert(obj, table, attrs, buildParam, ver)
-    if (s) {
+    if (s.query.length > 0) {
       return this.exec(s.query, s.params)
     } else {
       return Promise.resolve(-1)
@@ -161,7 +161,7 @@ export class ProxyClient {
   }
   update<T>(table: string, attrs: Attributes, obj: T, buildParam: (i: number) => string, ver?: string): Promise<number> {
     const s = buildToUpdate(obj, table, attrs, buildParam, ver)
-    if (s) {
+    if (s.query.length > 0) {
       return this.exec(s.query, s.params)
     } else {
       return Promise.resolve(-1)
@@ -169,7 +169,7 @@ export class ProxyClient {
   }
   insertBatch<T>(table: string, attrs: Attributes, objs: T[], buildParam: (i: number) => string, driver?: string): Promise<number> {
     const s = buildToInsertBatch(objs, table, attrs, buildParam)
-    if (s) {
+    if (s.query.length > 0) {
       return this.exec(s.query, s.params)
     } else {
       return Promise.resolve(-1)
@@ -185,7 +185,7 @@ export class ProxyClient {
   }
   insertWithTx<T>(tx: string, commit: boolean, table: string, attrs: Attributes, obj: T, buildParam: (i: number) => string, ver?: string): Promise<number> {
     const s = buildToInsert(obj, table, attrs, buildParam, ver)
-    if (s) {
+    if (s.query.length > 0) {
       return this.execWithTx(tx, commit, s.query, s.params)
     } else {
       return Promise.resolve(-1)
@@ -193,7 +193,7 @@ export class ProxyClient {
   }
   updateWithTx<T>(tx: string, commit: boolean, table: string, attrs: Attributes, obj: T, buildParam: (i: number) => string, ver?: string): Promise<number> {
     const s = buildToUpdate(obj, table, attrs, buildParam, ver)
-    if (s) {
+    if (s.query.length > 0) {
       return this.execWithTx(tx, commit, s.query, s.params)
     } else {
       return Promise.resolve(-1)
@@ -209,7 +209,7 @@ export class ProxyClient {
     driver?: string,
   ): Promise<number> {
     const s = buildToInsertBatch(objs, table, attrs, buildParam)
-    if (s) {
+    if (s.query.length > 0) {
       return this.execWithTx(tx, commit, s.query, s.params)
     } else {
       return Promise.resolve(-1)

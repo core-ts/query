@@ -26,7 +26,7 @@ export class SqlInserter<T> {
       obj2 = this.map(obj)
     }
     const stmt = buildToInsert(obj2, this.table, this.attributes, this.param, this.version)
-    if (stmt) {
+    if (stmt.query.length > 0) {
       if (this.oneIfSuccess) {
         return this.exec(stmt.query, stmt.params).then((ct) => (ct > 0 ? 1 : 0))
       } else {
@@ -63,7 +63,7 @@ export class SqlUpdater<T> {
       obj2 = this.map(obj)
     }
     const stmt = buildToUpdate(obj2, this.table, this.attributes, this.param, this.version)
-    if (stmt) {
+    if (stmt.query.length > 0) {
       if (this.oneIfSuccess) {
         return this.exec(stmt.query, stmt.params).then((ct) => (ct > 0 ? 1 : 0))
       } else {
@@ -104,7 +104,7 @@ export class SqlBatchInserter<T> {
       }
     }
     const stmt = buildToInsertBatch(list, this.table, this.attributes, this.param, this.version)
-    if (stmt) {
+    if (stmt.query.length > 0) {
       if (this.oneIfSuccess) {
         return this.exec(stmt.query, stmt.params).then((ct) => objs.length)
       } else {
@@ -205,7 +205,7 @@ export class StreamInserter<T> {
     } else {
       const total = this.list.length
       const stmt = buildToInsertBatch(this.list, this.table, this.attributes, this.param, this.version)
-      if (stmt) {
+      if (stmt.query.length > 0) {
         return this.exec(stmt.query, stmt.params).then((r) => {
           this.list = []
           return total

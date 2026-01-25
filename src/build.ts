@@ -15,7 +15,7 @@ export function params(length: number, p: (i: number) => string, from?: number):
   }
   return ps
 }
-export function select<T>(obj: T, table: string, ks: Attribute[], buildParam: (i: number) => string, i?: number): Statement | undefined {
+export function select<T>(obj: T, table: string, ks: Attribute[], buildParam: (i: number) => string, i?: number): Statement {
   if (!i) {
     i = 1
   }
@@ -41,10 +41,10 @@ export function select<T>(obj: T, table: string, ks: Attribute[], buildParam: (i
     const query = `select * from ${table} where ${cols.join(" and ")}`
     return { query, params: args }
   } else {
-    return undefined
+    return { query: "", params: [] }
   }
 }
-export function exist<T>(obj: T, table: string, ks: Attribute[], buildParam: (i: number) => string, col?: string, i?: number): Statement | undefined {
+export function exist<T>(obj: T, table: string, ks: Attribute[], buildParam: (i: number) => string, col?: string, i?: number): Statement {
   if (!i) {
     i = 1
   }
@@ -73,10 +73,10 @@ export function exist<T>(obj: T, table: string, ks: Attribute[], buildParam: (i:
     const query = `select * from ${table} where ${cols.join(" and ")}`
     return { query, params: args }
   } else {
-    return undefined
+    return { query: "", params: [] }
   }
 }
-export function buildToDelete<T>(obj: T, table: string, ks: Attribute[], buildParam: (i: number) => string, i?: number): Statement | undefined {
+export function buildToDelete<T>(obj: T, table: string, ks: Attribute[], buildParam: (i: number) => string, i?: number): Statement {
   if (!i) {
     i = 1
   }
@@ -102,7 +102,7 @@ export function buildToDelete<T>(obj: T, table: string, ks: Attribute[], buildPa
     const query = `delete from ${table} where ${cols.join(" and ")}`
     return { query, params: args }
   } else {
-    return undefined
+    return { query: "", params: [] }
   }
 }
 export function insert<T>(
@@ -115,13 +115,13 @@ export function insert<T>(
   i?: number,
 ): Promise<number> {
   const stm = buildToInsert(obj, table, attrs, buildParam, ver, i)
-  if (!stm) {
+  if (stm.query.length === 0) {
     return Promise.resolve(0)
   } else {
     return exec(stm.query, stm.params)
   }
 }
-export function buildToInsert<T>(obj: T, table: string, attrs: Attributes, buildParam: (i: number) => string, ver?: string, i?: number): Statement | undefined {
+export function buildToInsert<T>(obj: T, table: string, attrs: Attributes, buildParam: (i: number) => string, ver?: string, i?: number): Statement {
   if (!i) {
     i = 1
   }
@@ -187,7 +187,7 @@ export function buildToInsert<T>(obj: T, table: string, attrs: Attributes, build
     values.push(`${1}`)
   }
   if (cols.length === 0) {
-    return undefined
+    return { query: "", params: args }
   } else {
     const query = `insert into ${table}(${cols.join(",")})values(${values.join(",")})`
     return { query, params: args }
@@ -203,7 +203,7 @@ export function insertBatch<T>(
   i?: number,
 ): Promise<number> {
   const stm = buildToInsertBatch(objs, table, attrs, buildParam, ver, i)
-  if (!stm) {
+  if (stm.query.length === 0) {
     return Promise.resolve(0)
   } else {
     return exec(stm.query, stm.params)
@@ -219,7 +219,7 @@ export function buildToInsertBatch<T>(
   buildParam: ((i: number) => string) | boolean,
   ver?: string,
   i?: number,
-): Statement | undefined {
+): Statement {
   if (!i) {
     i = 1
   }
@@ -349,7 +349,7 @@ export function buildToInsertBatch<T>(
       }
       if (cols.length === 0) {
         if (notSkipInvalid) {
-          return undefined
+          return { query: "", params: args }
         }
       } else {
         const s = `into ${table}(${cols.join(",")})values(${values.join(",")})`
@@ -357,7 +357,7 @@ export function buildToInsertBatch<T>(
       }
     }
     if (rows.length === 0) {
-      return undefined
+      return { query: "", params: args }
     }
     const query = `insert all ${rows.join(" ")} select * from dual`
     return { query, params: args }
@@ -373,13 +373,13 @@ export function update<T>(
   i?: number,
 ): Promise<number> {
   const stm = buildToUpdate(obj, table, attrs, buildParam, ver, i)
-  if (!stm) {
+  if (stm.query.length === 0) {
     return Promise.resolve(0)
   } else {
     return exec(stm.query, stm.params)
   }
 }
-export function buildToUpdate<T>(obj: T, table: string, attrs: Attributes, buildParam: (i: number) => string, ver?: string, i?: number): Statement | undefined {
+export function buildToUpdate<T>(obj: T, table: string, attrs: Attributes, buildParam: (i: number) => string, ver?: string, i?: number): Statement {
   if (!i) {
     i = 1
   }
@@ -440,7 +440,7 @@ export function buildToUpdate<T>(obj: T, table: string, attrs: Attributes, build
     const na = pk.name ? pk.name : ""
     const v = o[na]
     if (!v) {
-      return undefined
+      return { query: "", params: args }
     } else {
       const attr = attrs[na]
       const field = attr.column ? attr.column : pk.name
@@ -480,7 +480,7 @@ export function buildToUpdate<T>(obj: T, table: string, attrs: Attributes, build
     }
   }
   if (colSet.length === 0 || colQuery.length === 0) {
-    return undefined
+    return { query: "", params: args }
   } else {
     const query = `update ${table} set ${colSet.join(",")} where ${colQuery.join(" and ")}`
     return { query, params: args }
@@ -495,7 +495,7 @@ export function updateBatch<T>(
   notSkipInvalid?: boolean,
 ): Promise<number> {
   const stmts = buildToUpdateBatch(objs, table, attrs, buildParam, notSkipInvalid)
-  if (!stmts || stmts.length === 0) {
+  if (stmts.length === 0) {
     return Promise.resolve(0)
   } else {
     return exec(stmts)
@@ -507,11 +507,11 @@ export function buildToUpdateBatch<T>(
   attrs: Attributes,
   buildParam: (i: number) => string,
   notSkipInvalid?: boolean,
-): Statement[] | undefined {
+): Statement[] {
   const sts: Statement[] = []
   const meta = metadata(attrs)
   if (!meta.keys || meta.keys.length === 0) {
-    return undefined
+    return sts
   }
   for (const obj of objs) {
     const o: any = obj
@@ -594,7 +594,7 @@ export function buildToUpdateBatch<T>(
     }
     if (!valid || colSet.length === 0 || colQuery.length === 0) {
       if (notSkipInvalid) {
-        return undefined
+        return sts
       }
     } else {
       const ver = meta.version
