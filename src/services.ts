@@ -1,5 +1,7 @@
 import { attributes, buildToDelete, buildToInsert, buildToUpdate, exist, metadata, select, version } from "./build"
 import { Attribute, Attributes, Statement, StringMap } from "./metadata"
+import { LikeType } from "./query"
+import { SearchBuilder } from "./SearchBuilder"
 // import { SearchResult } from "./search"
 
 export interface Filter {
@@ -561,5 +563,233 @@ export class CRUDRepository<T, ID> extends SqlWriter<T> {
     } else {
       return Promise.resolve(0)
     }
+  }
+}
+
+export class SqlSearchWriter<T, S> extends SearchBuilder<T, S> {
+  protected version?: string
+  protected exec: (sql: string, args?: any[], ctx?: any) => Promise<number>
+  constructor(
+    db: DB,
+    table: string,
+    protected attributes: Attributes,
+    buildQ?: (
+      s: S,
+      param: (i: number) => string,
+      sort?: string,
+      buildSort3?: (sort?: string, map?: Attributes | StringMap) => string,
+      attrs?: Attributes,
+      table?: string,
+      fields?: string[],
+      sq?: string,
+      strExcluding?: string,
+      likeType?: LikeType
+    ) => Statement | undefined,
+    protected toDB?: (v: T) => T,
+    fromDB?: (v: T) => T,
+    sort?: string,
+    q?: string,
+    excluding?: string,
+    buildSort?: (sort?: string, map?: Attributes | StringMap) => string,
+    buildParam?: (i: number) => string,
+    total?: string,
+  ) {
+    super(db.query, table, attributes, db.driver, buildQ, fromDB, sort, q, excluding, buildSort, buildParam, total)
+    this.exec = db.exec
+    const x = version(attributes)
+    if (x) {
+      this.version = x.name
+    }
+    this.create = this.create.bind(this)
+    this.update = this.update.bind(this)
+    this.patch = this.patch.bind(this)
+  }
+  create(obj: T, ctx?: any): Promise<number> {
+    let obj2 = obj
+    if (this.toDB) {
+      obj2 = this.toDB(obj)
+    }
+    const stmt = buildToInsert(obj2, this.table, this.attributes, this.param, this.version)
+    if (stmt.query.length > 0) {
+      return this.exec(stmt.query, stmt.params, ctx).catch((err) => {
+        if (err && err.error === "duplicate") {
+          return 0
+        } else {
+          throw err
+        }
+      })
+    } else {
+      return Promise.resolve(0)
+    }
+  }
+  update(obj: T, ctx?: any): Promise<number> {
+    let obj2 = obj
+    if (this.toDB) {
+      obj2 = this.toDB(obj)
+    }
+    const stmt = buildToUpdate(obj2, this.table, this.attributes, this.param, this.version)
+    if (stmt.query.length > 0) {
+      return this.exec(stmt.query, stmt.params, ctx)
+    } else {
+      return Promise.resolve(0)
+    }
+  }
+  patch(obj: Partial<T>, ctx?: any): Promise<number> {
+    return this.update(obj as any, ctx)
+  }
+}
+// tslint:disable-next-line:max-classes-per-file
+export class SqlRepository<T, ID, S> extends SqlSearchWriter<T, S> {
+  constructor(
+    db: DB,
+    table: string,
+    protected attributes: Attributes,
+    buildQ?: (
+      s: S,
+      param: (i: number) => string,
+      sort?: string,
+      buildSort3?: (sort?: string, map?: Attributes | StringMap) => string,
+      attrs?: Attributes,
+      table?: string,
+      fields?: string[],
+      sq?: string,
+      strExcluding?: string,
+      likeType?: LikeType
+    ) => Statement | undefined,
+    protected toDB?: (v: T) => T,
+    fromDB?: (v: T) => T,
+    sort?: string,
+    q?: string,
+    excluding?: string,
+    buildSort?: (sort?: string, map?: Attributes | StringMap) => string,
+    buildParam?: (i: number) => string,
+    total?: string,
+  ) {
+    super(db, table, attributes, buildQ, toDB, fromDB, sort, q, excluding, buildSort, buildParam, total)
+    this.metadata = this.metadata.bind(this)
+    this.all = this.all.bind(this)
+    this.load = this.load.bind(this)
+    this.exist = this.exist.bind(this)
+    this.delete = this.delete.bind(this)
+  }
+  metadata(): Attributes {
+    return this.attributes
+  }
+  all(): Promise<T[]> {
+    const sql = `select * from ${this.table}`
+    return this.query(sql, [], this.map)
+  }
+  load(id: ID, ctx?: any): Promise<T | null> {
+    const stmt = select<ID>(id, this.table, this.primaryKeys, this.param)
+    if (!stmt) {
+      throw new Error("cannot build query by id")
+    }
+    const fn = this.fromDB
+    if (fn) {
+      return this.query<T>(stmt.query, stmt.params, this.map, ctx).then((res) => {
+        if (!res || res.length === 0) {
+          return null
+        } else {
+          const obj = res[0]
+          return fn(obj)
+        }
+      })
+    } else {
+      return this.query<T>(stmt.query, stmt.params, this.map).then((res) => (!res || res.length === 0 ? null : res[0]))
+    }
+  }
+  exist(id: ID, ctx?: any): Promise<boolean> {
+    const field = this.primaryKeys[0].column ? this.primaryKeys[0].column : this.primaryKeys[0].name
+    const stmt = exist<ID>(id, this.table, this.primaryKeys, this.param, field)
+    if (!stmt) {
+      throw new Error("cannot build query by id")
+    }
+    return this.query(stmt.query, stmt.params, this.map, undefined, ctx).then((res) => (!res || res.length === 0 ? false : true))
+  }
+  delete(id: ID, ctx?: any): Promise<number> {
+    const stmt = buildToDelete<ID>(id, this.table, this.primaryKeys, this.param)
+    if (stmt) {
+      return this.exec(stmt.query, stmt.params, ctx)
+    } else {
+      return Promise.resolve(0)
+    }
+  }
+}
+// tslint:disable-next-line:max-classes-per-file
+export class Query<T, ID, S> extends SearchBuilder<T, S> {
+  primaryKeys: Attribute[]
+  map?: StringMap
+  // attributes: Attributes;
+  bools?: Attribute[]
+  constructor(
+    query: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any) => Promise<K[]>,
+    table: string,
+    attributes: Attributes,
+    buildQ?: (
+      s: S,
+      param: (i: number) => string,
+      sort?: string,
+      buildSort3?: (sort?: string, map?: Attributes | StringMap) => string,
+      attrs?: Attributes,
+      table?: string,
+      fields?: string[],
+      sq?: string,
+      strExcluding?: string,
+      likeType?: LikeType
+    ) => Statement | undefined,
+    provider?: string,
+    fromDB?: (v: T) => T,
+    sort?: string,
+    q?: string,
+    excluding?: string,
+    buildSort?: (sort?: string, map?: Attributes | StringMap) => string,
+    buildParam?: (i: number) => string,
+    total?: string,
+  ) {
+    super(query, table, attributes, provider, buildQ, fromDB, sort, q, excluding, buildSort, buildParam, total)
+    const m = metadata(attributes)
+    this.primaryKeys = m.keys
+    this.map = m.map
+    this.bools = m.bools
+    if (this.metadata) {
+      this.metadata = this.metadata.bind(this)
+    }
+    this.all = this.all.bind(this)
+    this.load = this.load.bind(this)
+    this.exist = this.exist.bind(this)
+  }
+  metadata?(): Attributes | undefined {
+    return this.attrs
+  }
+  all(): Promise<T[]> {
+    const sql = `select * from ${this.table}`
+    return this.query(sql, [], this.map)
+  }
+  load(id: ID, ctx?: any): Promise<T | null> {
+    const stmt = select<ID>(id, this.table, this.primaryKeys, this.param)
+    if (!stmt) {
+      throw new Error("cannot build query by id")
+    }
+    const fn = this.fromDB
+    if (fn) {
+      return this.query<T>(stmt.query, stmt.params, this.map, ctx).then((res) => {
+        if (!res || res.length === 0) {
+          return null
+        } else {
+          const obj = res[0]
+          return fn(obj)
+        }
+      })
+    } else {
+      return this.query<T>(stmt.query, stmt.params, this.map).then((res) => (!res || res.length === 0 ? null : res[0]))
+    }
+  }
+  exist(id: ID, ctx?: any): Promise<boolean> {
+    const field = this.primaryKeys[0].column ? this.primaryKeys[0].column : this.primaryKeys[0].name
+    const stmt = exist<ID>(id, this.table, this.primaryKeys, this.param, field)
+    if (!stmt) {
+      throw new Error("cannot build query by id")
+    }
+    return this.query(stmt.query, stmt.params, this.map, undefined, ctx).then((res) => (!res || res.length === 0 ? false : true))
   }
 }

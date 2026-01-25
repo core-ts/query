@@ -39,7 +39,6 @@ export type DataType =
   | "dates"
   | "datetimes"
   | "times"
-export type FormatType = "currency" | "percentage" | "email" | "url" | "phone" | "fax" | "ipv4" | "ipv6"
 export type Operator = "=" | "like" | "!=" | "<>" | ">" | ">=" | "<" | "<="
 
 export interface Model {
