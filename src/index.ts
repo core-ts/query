@@ -38,14 +38,12 @@ export interface Config {
 
 // tslint:disable-next-line:max-classes-per-file
 export class Loader<T> {
-  map?: StringMap
   constructor(
-    public query: (sql: string, args?: any[], m?: StringMap, bools?: Attribute[]) => Promise<T[]>,
-    public sql: string,
-    m?: StringMap,
-    public bools?: Attribute[],
+    protected query: (sql: string, args?: any[], m?: StringMap, bools?: Attribute[]) => Promise<T[]>,
+    protected sql: string,
+    protected map?: StringMap,
+    protected bools?: Attribute[],
   ) {
-    this.map = m
     this.load = this.load.bind(this)
   }
   load(): Promise<T[]> {
