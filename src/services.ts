@@ -495,7 +495,7 @@ export class SqlWriter<T> {
         }
       })
     } else {
-      return Promise.resolve(0)
+      return Promise.resolve(-1)
     }
   }
   update(obj: T, ctx?: Transaction): Promise<number> {
@@ -508,7 +508,7 @@ export class SqlWriter<T> {
       const db = ctx ? ctx : this.db
       return db.exec(stmt.query, stmt.params)
     } else {
-      return Promise.resolve(0)
+      return Promise.resolve(-1)
     }
   }
   patch(obj: Partial<T>, ctx?: any): Promise<number> {
@@ -631,7 +631,7 @@ export class SqlSearchWriter<T, S> extends SearchBuilder<T, S> {
         }
       })
     } else {
-      return Promise.resolve(0)
+      return Promise.resolve(-1)
     }
   }
   update(obj: T, ctx?: Transaction): Promise<number> {
@@ -644,7 +644,7 @@ export class SqlSearchWriter<T, S> extends SearchBuilder<T, S> {
       const db = ctx ? ctx : this.db
       return db.exec(stmt.query, stmt.params)
     } else {
-      return Promise.resolve(0)
+      return Promise.resolve(-1)
     }
   }
   patch(obj: Partial<T>, ctx?: Transaction): Promise<number> {
