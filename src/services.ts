@@ -541,7 +541,7 @@ export class CRUDRepository<T, ID> extends SqlWriter<T> {
   }
   load(id: ID, ctx?: Transaction): Promise<T | null> {
     const stmt = select<ID>(id, this.table, this.primaryKeys, this.db.param)
-    if (stmt.query.length === 0) {
+    if (!stmt.query) {
       throw new Error("cannot build query by id")
     }
     const fn = this.fromDB
@@ -562,7 +562,7 @@ export class CRUDRepository<T, ID> extends SqlWriter<T> {
   exist(id: ID, ctx?: Transaction): Promise<boolean> {
     const field = this.primaryKeys[0].column ? this.primaryKeys[0].column : this.primaryKeys[0].name
     const stmt = exist<ID>(id, this.table, this.primaryKeys, this.db.param, field)
-    if (stmt.query.length === 0) {
+    if (!stmt.query) {
       throw new Error("cannot build query by id")
     }
     const db = ctx ? ctx : this.db
@@ -570,7 +570,7 @@ export class CRUDRepository<T, ID> extends SqlWriter<T> {
   }
   delete(id: ID, ctx?: Transaction): Promise<number> {
     const stmt = buildToDelete<ID>(id, this.table, this.primaryKeys, this.db.param)
-    if (stmt.query.length > 0) {
+    if (stmt.query) {
       const db = ctx ? ctx : this.db
       return db.exec(stmt.query, stmt.params)
     } else {
@@ -621,7 +621,7 @@ export class SqlSearchWriter<T, S> extends SearchBuilder<T, S> {
       obj2 = this.toDB(obj)
     }
     const stmt = buildToInsert(obj2, this.table, this.attributes, this.param, this.version)
-    if (stmt.query.length > 0) {
+    if (stmt.query) {
       const db = ctx ? ctx : this.db
       return db.exec(stmt.query, stmt.params).catch((err) => {
         if (err && err.error === "duplicate") {
@@ -640,7 +640,7 @@ export class SqlSearchWriter<T, S> extends SearchBuilder<T, S> {
       obj2 = this.toDB(obj)
     }
     const stmt = buildToUpdate(obj2, this.table, this.attributes, this.param, this.version)
-    if (stmt.query.length > 0) {
+    if (stmt.query) {
       const db = ctx ? ctx : this.db
       return db.exec(stmt.query, stmt.params)
     } else {

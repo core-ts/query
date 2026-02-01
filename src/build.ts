@@ -115,7 +115,7 @@ export function insert<T>(
   i?: number,
 ): Promise<number> {
   const stm = buildToInsert(obj, table, attrs, buildParam, ver, i)
-  if (stm.query.length === 0) {
+  if (!stm.query) {
     return Promise.resolve(0)
   } else {
     return exec(stm.query, stm.params)
@@ -203,7 +203,7 @@ export function insertBatch<T>(
   i?: number,
 ): Promise<number> {
   const stm = buildToInsertBatch(objs, table, attrs, buildParam, ver, i)
-  if (stm.query.length === 0) {
+  if (!stm.query) {
     return Promise.resolve(0)
   } else {
     return exec(stm.query, stm.params)
@@ -373,7 +373,7 @@ export function update<T>(
   i?: number,
 ): Promise<number> {
   const stm = buildToUpdate(obj, table, attrs, buildParam, ver, i)
-  if (stm.query.length === 0) {
+  if (!stm.query) {
     return Promise.resolve(0)
   } else {
     return exec(stm.query, stm.params)
