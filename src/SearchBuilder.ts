@@ -1,4 +1,4 @@
-import { metadata, param } from "./build"
+import { buildMetadata, param } from "./build"
 import { Attribute, Attributes, Statement, StringMap } from "./metadata"
 import { buildSort as bs, buildDollarParam, buildMsSQLParam, buildOracleParam, buildQuery, LikeType } from "./query"
 import { buildFromQuery, oracle, SearchResult } from "./search"
@@ -56,7 +56,7 @@ export class SearchBuilder<T, S> {
   ) {
     if (attrs) {
       this.attrs = attrs
-      const meta = metadata(attrs)
+      const meta = buildMetadata(attrs)
       this.map = meta.map
       this.bools = meta.bools
       this.primaryKeys = meta.keys

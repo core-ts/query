@@ -1,4 +1,4 @@
-import { attributes, buildToDelete, buildToInsert, buildToUpdate, exist, metadata, select, version } from "./build"
+import { attributes, buildToDelete, buildToInsert, buildToUpdate, exist, buildMetadata, select, version } from "./build"
 import { Attribute, Attributes, Statement, StringMap } from "./metadata"
 import { LikeType } from "./query"
 import { SearchBuilder } from "./SearchBuilder"
@@ -12,13 +12,12 @@ export interface Filter {
 export type Load<T, ID> = (id: ID, ctx?: any) => Promise<T | null>
 export type Get<T, ID> = Load<T, ID>
 export function useGet<T, ID>(
-  q: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any) => Promise<K[]>,
-  param: (i: number) => string,
+  db: DB,
   table: string,
   attrs: Attributes | string[],
   fromDB?: (v: T) => T,
 ): Load<T, ID> {
-  const l = new SqlLoader<T, ID>(q, param, table, attrs, fromDB)
+  const l = new SqlLoader<T, ID>(db, table, attrs, fromDB)
   return l.load
 }
 export const useLoad = useGet
@@ -28,8 +27,7 @@ export class SqlLoader<T, ID> {
   attributes: Attributes
   bools?: Attribute[]
   constructor(
-    protected query: <K>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any) => Promise<K[]>,
-    protected param: (i: number) => string,
+    protected db: DB,
     protected table: string,
     attrs: Attributes | string[],
     protected fromDB?: (v: T) => T,
@@ -38,7 +36,7 @@ export class SqlLoader<T, ID> {
       this.primaryKeys = attributes(attrs)
       this.attributes = {} as any
     } else {
-      const m = metadata(attrs)
+      const m = buildMetadata(attrs)
       this.attributes = attrs
       this.primaryKeys = m.keys
       this.map = m.map
@@ -54,18 +52,20 @@ export class SqlLoader<T, ID> {
   metadata?(): Attributes | undefined {
     return this.attributes
   }
-  all(ctx?: any): Promise<T[]> {
+  all(tx?: Transaction): Promise<T[]> {
     const sql = `select * from ${this.table}`
-    return this.query(sql, [], this.map, this.bools, ctx)
+    const db = tx ? tx: this.db
+    return db.query(sql, [], this.map, this.bools)
   }
-  load(id: ID, ctx?: any): Promise<T | null> {
-    const stmt = select<ID>(id, this.table, this.primaryKeys, this.param)
+  load(id: ID, tx?: Transaction): Promise<T | null> {
+    const stmt = select<ID>(id, this.table, this.primaryKeys, this.db.param)
     if (!stmt.query) {
       throw new Error("cannot build query by id")
     }
+    const db = tx ? tx: this.db
     const fn = this.fromDB
     if (fn) {
-      return this.query<T>(stmt.query, stmt.params, this.map, this.bools, ctx).then((res) => {
+      return db.query<T>(stmt.query, stmt.params, this.map, this.bools).then((res) => {
         if (!res || res.length === 0) {
           return null
         } else {
@@ -74,16 +74,17 @@ export class SqlLoader<T, ID> {
         }
       })
     } else {
-      return this.query<T>(stmt.query, stmt.params, this.map, this.bools, ctx).then((res) => (!res || res.length === 0 ? null : res[0]))
+      return db.query<T>(stmt.query, stmt.params, this.map, this.bools).then((res) => (!res || res.length === 0 ? null : res[0]))
     }
   }
-  exist(id: ID, ctx?: any): Promise<boolean> {
+  exist(id: ID, tx?: Transaction): Promise<boolean> {
     const field = this.primaryKeys[0].column ? this.primaryKeys[0].column : this.primaryKeys[0].name
-    const stmt = exist<ID>(id, this.table, this.primaryKeys, this.param, field)
+    const stmt = exist<ID>(id, this.table, this.primaryKeys, this.db.param, field)
     if (!stmt.query) {
       throw new Error("cannot build query by id")
     }
-    return this.query(stmt.query, stmt.params, undefined, undefined, ctx).then((res) => (!res || res.length === 0 ? false : true))
+    const db = tx ? tx: this.db
+    return db.query(stmt.query, stmt.params, undefined, undefined).then((res) => (!res || res.length === 0 ? false : true))
   }
 }
 // tslint:disable-next-line:max-classes-per-file
@@ -91,14 +92,14 @@ export class QueryRepository<T, ID> {
   constructor(protected db: Executor, protected table: string, protected attrs: Attributes, protected sort?: string, id?: string) {
     this.id = id && id.length > 0 ? id : "id"
     this.query = this.query.bind(this)
-    const m = metadata(attrs)
+    const m = buildMetadata(attrs)
     this.map = m.map
     this.bools = m.bools
   }
   id: string
   map?: StringMap
   bools?: Attribute[]
-  query(ids: ID[], ctx?: Transaction): Promise<T[]> {
+  query(ids: ID[], tx?: Transaction): Promise<T[]> {
     if (!ids || ids.length === 0) {
       return Promise.resolve([])
     }
@@ -111,7 +112,7 @@ export class QueryRepository<T, ID> {
     if (this.sort && this.sort.length > 0) {
       sql = sql + " order by " + this.sort
     }
-    const db = ctx ? ctx : this.db
+    const db = tx ? tx: this.db
     return db.query<T>(sql, ids, this.map, this.bools)
   }
 }
@@ -119,14 +120,13 @@ export class QueryRepository<T, ID> {
 export interface Executor {
   driver: string
   param(i: number): string
-  exec(sql: string, args?: any[], ctx?: any): Promise<number>
-  execBatch(statements: Statement[], firstSuccess?: boolean, ctx?: any): Promise<number>
+  execute(sql: string, args?: any[], ctx?: any): Promise<number>
+  executeBatch(statements: Statement[], firstSuccess?: boolean, ctx?: any): Promise<number>
   query<T>(sql: string, args?: any[], m?: StringMap, bools?: Attribute[], ctx?: any): Promise<T[]>
 }
 export interface Transaction extends Executor {
   commit(): Promise<void>
   rollback(): Promise<void>
-  end(): Promise<void>
 }
 export interface DB extends Executor {
   beginTransaction(): Promise<Transaction>
@@ -470,24 +470,34 @@ const getDurationInMilliseconds = (start: [number, number] | undefined) => {
 // tslint:disable-next-line:max-classes-per-file
 export class SqlWriter<T> {
   protected version?: string
+  protected createdAt?: string
+  protected updatedAt?: string
   constructor(protected db: Executor, protected table: string, protected attributes: Attributes, protected toDB?: (v: T) => T) {
-    const x = version(attributes)
+    const x = buildMetadata(attributes)
     if (x) {
-      this.version = x.name
+      this.version = x.version
+      this.createdAt = x.createdAt
+      this.updatedAt = x.updatedAt
     }
     this.create = this.create.bind(this)
     this.update = this.update.bind(this)
     this.patch = this.patch.bind(this)
   }
-  create(obj: T, ctx?: Transaction): Promise<number> {
+  create(obj: T, tx?: Transaction): Promise<number> {
     let obj2 = obj
     if (this.toDB) {
       obj2 = this.toDB(obj)
     }
+    if (this.createdAt) {
+      (obj2 as any)[this.createdAt] = new Date()
+    }
+    if (this.updatedAt) {
+      (obj2 as any)[this.updatedAt] = new Date()
+    }
     const stmt = buildToInsert(obj2, this.table, this.attributes, this.db.param, this.version)
     if (stmt.query) {
-      const db = ctx ? ctx : this.db
-      return db.exec(stmt.query, stmt.params).catch((err) => {
+      const db = tx ? tx: this.db
+      return db.execute(stmt.query, stmt.params).catch((err) => {
         if (err && err.error === "duplicate") {
           return 0
         } else {
@@ -498,21 +508,27 @@ export class SqlWriter<T> {
       return Promise.resolve(-1)
     }
   }
-  update(obj: T, ctx?: Transaction): Promise<number> {
+  update(obj: T, tx?: Transaction): Promise<number> {
     let obj2 = obj
     if (this.toDB) {
       obj2 = this.toDB(obj)
     }
+    if (this.createdAt) {
+      (obj2 as any)[this.createdAt] = new Date()
+    }
+    if (this.updatedAt) {
+      (obj2 as any)[this.updatedAt] = new Date()
+    }
     const stmt = buildToUpdate(obj2, this.table, this.attributes, this.db.param, this.version)
     if (stmt.query) {
-      const db = ctx ? ctx : this.db
-      return db.exec(stmt.query, stmt.params)
+      const db = tx ? tx: this.db
+      return db.execute(stmt.query, stmt.params)
     } else {
       return Promise.resolve(-1)
     }
   }
-  patch(obj: Partial<T>, ctx?: any): Promise<number> {
-    return this.update(obj as any, ctx)
+  patch(obj: Partial<T>, tx?: Transaction): Promise<number> {
+    return this.update(obj as any, tx)
   }
 }
 export class CRUDRepository<T, ID> extends SqlWriter<T> {
@@ -521,7 +537,7 @@ export class CRUDRepository<T, ID> extends SqlWriter<T> {
   protected bools?: Attribute[]
   constructor(db: Executor, table: string, attributes: Attributes, toDB?: (v: T) => T, protected fromDB?: (v: T) => T) {
     super(db, table, attributes, toDB)
-    const m = metadata(attributes)
+    const m = buildMetadata(attributes)
     this.primaryKeys = m.keys
     this.map = m.map
     this.bools = m.bools
@@ -534,18 +550,18 @@ export class CRUDRepository<T, ID> extends SqlWriter<T> {
   metadata(): Attributes {
     return this.attributes
   }
-  all(ctx?: Transaction): Promise<T[]> {
+  all(tx?: Transaction): Promise<T[]> {
     const sql = `select * from ${this.table}`
-    const db = ctx ? ctx : this.db
+    const db = tx ? tx: this.db
     return db.query(sql, [], this.map, this.bools)
   }
-  load(id: ID, ctx?: Transaction): Promise<T | null> {
+  load(id: ID, tx?: Transaction): Promise<T | null> {
     const stmt = select<ID>(id, this.table, this.primaryKeys, this.db.param)
     if (!stmt.query) {
       throw new Error("cannot build query by id")
     }
     const fn = this.fromDB
-    const db = ctx ? ctx : this.db
+    const db = tx ? tx: this.db
     if (fn) {
       return db.query<T>(stmt.query, stmt.params, this.map, this.bools).then((res) => {
         if (!res || res.length === 0) {
@@ -559,20 +575,20 @@ export class CRUDRepository<T, ID> extends SqlWriter<T> {
       return db.query<T>(stmt.query, stmt.params, this.map, this.bools).then((res) => (!res || res.length === 0 ? null : res[0]))
     }
   }
-  exist(id: ID, ctx?: Transaction): Promise<boolean> {
+  exist(id: ID, tx?: Transaction): Promise<boolean> {
     const field = this.primaryKeys[0].column ? this.primaryKeys[0].column : this.primaryKeys[0].name
     const stmt = exist<ID>(id, this.table, this.primaryKeys, this.db.param, field)
     if (!stmt.query) {
       throw new Error("cannot build query by id")
     }
-    const db = ctx ? ctx : this.db
+    const db = tx ? tx: this.db
     return db.query(stmt.query, stmt.params).then((res) => (!res || res.length === 0 ? false : true))
   }
-  delete(id: ID, ctx?: Transaction): Promise<number> {
+  delete(id: ID, tx?: Transaction): Promise<number> {
     const stmt = buildToDelete<ID>(id, this.table, this.primaryKeys, this.db.param)
     if (stmt.query) {
-      const db = ctx ? ctx : this.db
-      return db.exec(stmt.query, stmt.params)
+      const db = tx ? tx: this.db
+      return db.execute(stmt.query, stmt.params)
     } else {
       throw new Error("cannot build delete query by id")
     }
@@ -615,15 +631,15 @@ export class SqlSearchWriter<T, S> extends SearchBuilder<T, S> {
     this.update = this.update.bind(this)
     this.patch = this.patch.bind(this)
   }
-  create(obj: T, ctx?: Transaction): Promise<number> {
+  create(obj: T, tx?: Transaction): Promise<number> {
     let obj2 = obj
     if (this.toDB) {
       obj2 = this.toDB(obj)
     }
     const stmt = buildToInsert(obj2, this.table, this.attributes, this.param, this.version)
     if (stmt.query) {
-      const db = ctx ? ctx : this.db
-      return db.exec(stmt.query, stmt.params).catch((err) => {
+      const db = tx ? tx: this.db
+      return db.execute(stmt.query, stmt.params).catch((err) => {
         if (err && err.error === "duplicate") {
           return 0
         } else {
@@ -634,21 +650,21 @@ export class SqlSearchWriter<T, S> extends SearchBuilder<T, S> {
       return Promise.resolve(-1)
     }
   }
-  update(obj: T, ctx?: Transaction): Promise<number> {
+  update(obj: T, tx?: Transaction): Promise<number> {
     let obj2 = obj
     if (this.toDB) {
       obj2 = this.toDB(obj)
     }
     const stmt = buildToUpdate(obj2, this.table, this.attributes, this.param, this.version)
     if (stmt.query) {
-      const db = ctx ? ctx : this.db
-      return db.exec(stmt.query, stmt.params)
+      const db = tx ? tx: this.db
+      return db.execute(stmt.query, stmt.params)
     } else {
       return Promise.resolve(-1)
     }
   }
-  patch(obj: Partial<T>, ctx?: Transaction): Promise<number> {
-    return this.update(obj as any, ctx)
+  patch(obj: Partial<T>, tx?: Transaction): Promise<number> {
+    return this.update(obj as any, tx)
   }
 }
 // tslint:disable-next-line:max-classes-per-file
@@ -688,18 +704,18 @@ export class SqlRepository<T, ID, S> extends SqlSearchWriter<T, S> {
   metadata(): Attributes {
     return this.attributes
   }
-  all(ctx?: Transaction): Promise<T[]> {
+  all(tx?: Transaction): Promise<T[]> {
     const sql = `select * from ${this.table}`
-    const db = ctx ? ctx : this.db
+    const db = tx ? tx: this.db
     return db.query(sql, [], this.map, this.bools)
   }
-  load(id: ID, ctx?: Transaction): Promise<T | null> {
+  load(id: ID, tx?: Transaction): Promise<T | null> {
     const stmt = select<ID>(id, this.table, this.primaryKeys, this.param)
     if (!stmt.query) {
       throw new Error("cannot build query by id")
     }
     const fn = this.fromDB
-    const db = ctx ? ctx : this.db
+    const db = tx ? tx: this.db
     if (fn) {
       return db.query<T>(stmt.query, stmt.params, this.map, this.bools).then((res) => {
         if (!res || res.length === 0) {
@@ -713,20 +729,20 @@ export class SqlRepository<T, ID, S> extends SqlSearchWriter<T, S> {
       return db.query<T>(stmt.query, stmt.params, this.map, this.bools).then((res) => (!res || res.length === 0 ? null : res[0]))
     }
   }
-  exist(id: ID, ctx?: Transaction): Promise<boolean> {
+  exist(id: ID, tx?: Transaction): Promise<boolean> {
     const field = this.primaryKeys[0].column ? this.primaryKeys[0].column : this.primaryKeys[0].name
     const stmt = exist<ID>(id, this.table, this.primaryKeys, this.param, field)
     if (!stmt.query) {
       throw new Error("cannot build query by id")
     }
-    const db = ctx ? ctx : this.db
+    const db = tx ? tx: this.db
     return db.query(stmt.query, stmt.params).then((res) => (!res || res.length === 0 ? false : true))
   }
-  delete(id: ID, ctx?: Transaction): Promise<number> {
+  delete(id: ID, tx?: Transaction): Promise<number> {
     const stmt = buildToDelete<ID>(id, this.table, this.primaryKeys, this.param)
     if (stmt.query) {
-      const db = ctx ? ctx : this.db
-      return db.exec(stmt.query, stmt.params)
+      const db = tx ? tx: this.db
+      return db.execute(stmt.query, stmt.params)
     } else {
       throw new Error("cannot build delete query by id")
     }
@@ -764,7 +780,7 @@ export class Query<T, ID, S> extends SearchBuilder<T, S> {
     total?: string,
   ) {
     super(query, table, attributes, provider, buildQ, fromDB, sort, q, excluding, buildSort, buildParam, total)
-    const m = metadata(attributes)
+    const m = buildMetadata(attributes)
     this.primaryKeys = m.keys
     this.map = m.map
     this.bools = m.bools

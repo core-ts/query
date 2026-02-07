@@ -41,15 +41,6 @@ export type DataType =
   | "times"
 export type Operator = "=" | "like" | "!=" | "<>" | ">" | ">=" | "<" | "<="
 
-export interface Model {
-  name?: string
-  attributes: Attributes
-  source?: string
-  table?: string
-  collection?: string
-  model?: any
-  schema?: any
-}
 export interface Attribute {
   name?: string
   column?: string
@@ -65,6 +56,8 @@ export interface Attribute {
   ignored?: boolean
   true?: string | number
   false?: string | number
+  createdAt?: boolean
+  updatedAt?: boolean
 }
 export interface Attributes {
   [key: string]: Attribute

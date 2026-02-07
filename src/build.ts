@@ -509,7 +509,7 @@ export function buildToUpdateBatch<T>(
   notSkipInvalid?: boolean,
 ): Statement[] {
   const sts: Statement[] = []
-  const meta = metadata(attrs)
+  const meta = buildMetadata(attrs)
   if (!meta.keys || meta.keys.length === 0) {
     return sts
   }
@@ -670,8 +670,10 @@ export interface Metadata {
   map?: StringMap
   version?: string
   fields?: string[]
+  updatedAt?: string
+  createdAt?: string
 }
-export function metadata(attrs: Attributes): Metadata {
+export function buildMetadata(attrs: Attributes): Metadata {
   const mp: StringMap = {}
   const ks = Object.keys(attrs)
   const ats: Attribute[] = []
@@ -693,6 +695,11 @@ export function metadata(attrs: Attributes): Metadata {
     }
     if (attr.version) {
       m.version = k
+    }
+    if (attr.updatedAt) {
+      m.updatedAt = k
+    } else if (attr.createdAt) {
+      m.createdAt = k
     }
     const field = attr.column ? attr.column : k
     const s = field.toLowerCase()
