@@ -574,7 +574,7 @@ export class CRUDRepository<T, ID> extends SqlWriter<T> {
       const db = ctx ? ctx : this.db
       return db.exec(stmt.query, stmt.params)
     } else {
-      return Promise.resolve(0)
+      throw new Error("cannot build delete query by id")
     }
   }
 }
@@ -695,7 +695,7 @@ export class SqlRepository<T, ID, S> extends SqlSearchWriter<T, S> {
   }
   load(id: ID, ctx?: Transaction): Promise<T | null> {
     const stmt = select<ID>(id, this.table, this.primaryKeys, this.param)
-    if (!stmt) {
+    if (!stmt.query) {
       throw new Error("cannot build query by id")
     }
     const fn = this.fromDB
@@ -716,7 +716,7 @@ export class SqlRepository<T, ID, S> extends SqlSearchWriter<T, S> {
   exist(id: ID, ctx?: Transaction): Promise<boolean> {
     const field = this.primaryKeys[0].column ? this.primaryKeys[0].column : this.primaryKeys[0].name
     const stmt = exist<ID>(id, this.table, this.primaryKeys, this.param, field)
-    if (!stmt) {
+    if (!stmt.query) {
       throw new Error("cannot build query by id")
     }
     const db = ctx ? ctx : this.db
@@ -728,7 +728,7 @@ export class SqlRepository<T, ID, S> extends SqlSearchWriter<T, S> {
       const db = ctx ? ctx : this.db
       return db.exec(stmt.query, stmt.params)
     } else {
-      return Promise.resolve(0)
+      throw new Error("cannot build delete query by id")
     }
   }
 }
@@ -804,7 +804,7 @@ export class Query<T, ID, S> extends SearchBuilder<T, S> {
   exist(id: ID, ctx?: any): Promise<boolean> {
     const field = this.primaryKeys[0].column ? this.primaryKeys[0].column : this.primaryKeys[0].name
     const stmt = exist<ID>(id, this.table, this.primaryKeys, this.param, field)
-    if (stmt.query) {
+    if (!stmt.query) {
       throw new Error("cannot build query by id")
     }
     return this.query(stmt.query, stmt.params, undefined, undefined, ctx).then((res) => (!res || res.length === 0 ? false : true))
