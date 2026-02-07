@@ -39,6 +39,7 @@ export class Checker {
     return data
   }
 }
+export const SqlChecker = Checker
 
 function promiseTimeOut(timeoutInMilliseconds: number, promise: Promise<any>): Promise<any> {
   return Promise.race([
