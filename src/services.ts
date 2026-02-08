@@ -597,7 +597,6 @@ export const GenericRepository = CRUDRepository
 export const SqlGenericRepository = CRUDRepository
 
 export class SqlSearchWriter<T, S> extends SearchBuilder<T, S> {
-  protected version?: string
   constructor(
     protected db: Executor,
     table: string,
@@ -623,18 +622,24 @@ export class SqlSearchWriter<T, S> extends SearchBuilder<T, S> {
     total?: string,
   ) {
     super(db, table, attributes, buildQ, fromDB, sort, q, excluding, buildSort, total)
-    const x = version(attributes)
+    const x = buildMetadata(attributes)
     if (x) {
-      this.version = x.name
+      this.version = x.version
     }
     this.create = this.create.bind(this)
     this.update = this.update.bind(this)
     this.patch = this.patch.bind(this)
   }
   create(obj: T, tx?: Transaction): Promise<number> {
-    let obj2 = obj
+    let obj2: any = obj
     if (this.toDB) {
       obj2 = this.toDB(obj)
+    }
+    if (this.createdAt) {
+      obj2[this.createdAt] = new Date()
+    }
+    if (this.updatedAt) {
+      obj2[this.updatedAt] = new Date()
     }
     const stmt = buildToInsert(obj2, this.table, this.attributes, this.db.param, this.version)
     if (stmt.query) {
@@ -651,9 +656,12 @@ export class SqlSearchWriter<T, S> extends SearchBuilder<T, S> {
     }
   }
   update(obj: T, tx?: Transaction): Promise<number> {
-    let obj2 = obj
+    let obj2: any = obj
     if (this.toDB) {
       obj2 = this.toDB(obj)
+    }
+    if (this.updatedAt) {
+      obj2[this.updatedAt] = new Date()
     }
     const stmt = buildToUpdate(obj2, this.table, this.attributes, this.db.param, this.version)
     if (stmt.query) {
@@ -691,7 +699,6 @@ export class SqlRepository<T, ID, S> extends SqlSearchWriter<T, S> {
     q?: string,
     excluding?: string,
     buildSort?: (sort?: string, map?: Attributes | StringMap) => string,
-    buildParam?: (i: number) => string,
     total?: string,
   ) {
     super(db, table, attributes, buildQ, toDB, fromDB, sort, q, excluding, buildSort, total)

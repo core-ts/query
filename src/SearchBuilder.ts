@@ -17,6 +17,9 @@ export class SearchBuilder<T, S> {
   protected map?: StringMap
   protected bools?: Attribute[]
   protected primaryKeys: Attribute[]
+  protected version?: string
+  protected createdAt?: string
+  protected updatedAt?: string
   protected buildQuery: (
     s: S,
     param: (i: number) => string,
@@ -62,6 +65,9 @@ export class SearchBuilder<T, S> {
       this.map = meta.map
       this.bools = meta.bools
       this.primaryKeys = meta.keys
+      this.version = meta.version
+      this.createdAt = meta.createdAt
+      this.updatedAt = meta.updatedAt
     } else {
       this.primaryKeys = []
     }
